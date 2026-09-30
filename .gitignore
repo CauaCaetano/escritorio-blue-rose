@@ -1,0 +1,25 @@
+# Dependências
+node_modules/
+
+# Configurações locais e chaves (NUNCA versionar)
+.env
+.env.*
+!.env.example
+
+# Banco de dados e arquivos gerados em tempo de execução
+data/
+previas/
+
+# Logs e lixo de sistema
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+
+# Configuração local do Claude Code
+.claude/

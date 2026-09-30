@@ -1,0 +1,4 @@
+# Finais de linha consistentes entre Windows, Mac e Linux
+* text=auto eol=lf
+*.png binary
+*.svg text

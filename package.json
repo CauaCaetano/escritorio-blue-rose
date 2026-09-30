@@ -1,0 +1,34 @@
+{
+  "name": "escritorio-blue-rose",
+  "version": "0.1.0",
+  "description": "Escritório virtual em pixel art onde agentes de IA da BLUE ROSE prospectam clientes, escrevem propostas e montam prévias de páginas.",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "pixel-art",
+    "agentes",
+    "ia",
+    "escritorio-virtual",
+    "websocket",
+    "sqlite"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "ws": "^8.22.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@13.0.3": true
+  }
+}

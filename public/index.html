@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Escritório BLUE ROSE</title>
+  <meta name="description" content="Escritório virtual em pixel art onde os agentes de IA da BLUE ROSE trabalham.">
+  <meta name="theme-color" content="#16213f">
+  <link rel="icon" href="img/rosa.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilo.css">
+  <script>
+    // Aplica o tema salvo antes de desenhar a página (evita "piscar")
+    // Também aceita ?tema=claro ou ?tema=escuro na URL (útil para prints)
+    try {
+      const daUrl = { claro: 'light', escuro: 'dark' }[new URLSearchParams(location.search).get('tema')];
+      const t = daUrl || localStorage.getItem('br-tema');
+      if (t) document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      <img src="img/rosa.svg" alt="" width="32" height="32">
+      <div>
+        <strong>BLUE ROSE</strong>
+        <span>Escritório executivo</span>
+      </div>
+    </div>
+
+    <div class="controles">
+      <span id="selo-ia" class="selo-ia" title="Situação da IA real">IA: verificando…</span>
+      <div class="grupo-velocidade" role="group" aria-label="Velocidade da simulação">
+        <button type="button" data-vel="1" aria-pressed="true">1x</button>
+        <button type="button" data-vel="2" aria-pressed="false">2x</button>
+        <button type="button" data-vel="4" aria-pressed="false">4x</button>
+      </div>
+      <button type="button" id="botao-tema" class="botao-icone" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8A9 9 0 0 0 12 3z"/></svg>
+      </button>
+      <span id="conexao" class="conexao" data-estado="conectando" title="Conectando...">
+        <span class="ponto"></span><span class="rotulo">Conectando</span>
+      </span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Escritório em pixel art -->
+    <section class="palco" aria-label="Escritório">
+      <div class="contadores" id="contadores"></div>
+      <div class="moldura" id="moldura">
+        <canvas id="cena" aria-label="Mapa do escritório com os agentes trabalhando"></canvas>
+        <div id="cartao-agente" class="cartao-agente" hidden></div>
+      </div>
+      <p class="dica">Clique em um personagem para ver o papel e o que ele está fazendo.</p>
+    </section>
+
+    <!-- Painel lateral -->
+    <aside class="painel">
+      <div class="bloco">
+        <div class="bloco-titulo">
+          <h2>Novo trabalho</h2>
+          <div class="alternador" role="group" aria-label="Tipo de trabalho">
+            <button type="button" data-form="negocio" aria-pressed="true">Negócio real</button>
+            <button type="button" data-form="demo" aria-pressed="false">Demonstração</button>
+          </div>
+        </div>
+
+        <!-- Negócio real: você informa os dados, o Prospector analisa (sem raspagem) -->
+        <form id="form-negocio" autocomplete="off">
+          <div class="form-grade">
+            <label class="inteiro">Nome do negócio
+              <input name="nome" maxlength="120" placeholder="Ex.: Clínica Sorriso Leve" required>
+            </label>
+            <label>Tipo
+              <input name="tipo" maxlength="80" placeholder="Ex.: Odontologia" list="tipos-sugeridos">
+            </label>
+            <label>Cidade
+              <input name="cidade" maxlength="80" placeholder="Ex.: Franca - SP">
+            </label>
+            <label>Instagram
+              <input name="instagram" maxlength="80" placeholder="@perfil (opcional)">
+            </label>
+            <label>WhatsApp
+              <input name="whatsapp" maxlength="20" inputmode="tel" placeholder="(16) 99999-9999 (opcional)">
+            </label>
+            <label class="inteiro">Observações
+              <textarea name="observacoes" maxlength="1000" placeholder="O que você já sabe: não tem site, demora no WhatsApp, horários..."></textarea>
+            </label>
+          </div>
+          <div class="acoes" style="margin-top:10px">
+            <button type="submit" class="botao ouro">Entregar ao Gerente</button>
+          </div>
+          <datalist id="tipos-sugeridos">
+            <option value="Clínica de estética"><option value="Odontologia"><option value="Consultório médico">
+            <option value="Salão de beleza"><option value="Barbearia"><option value="Personal trainer"><option value="Fisioterapia">
+          </datalist>
+        </form>
+
+        <!-- Demonstração: negócios FICTÍCIOS, útil para ver o escritório funcionando -->
+        <form id="form-pedido" autocomplete="off" hidden>
+          <div class="linha-pedido">
+            <input id="pedido-texto" name="texto" maxlength="300" placeholder="Ex.: 2 barbearias em Campinas" required>
+            <select id="pedido-qtd" name="quantidade" aria-label="Quantidade de negócios">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+            </select>
+            <button type="submit" class="botao primario">Enviar</button>
+          </div>
+          <p class="nota-form">Cria negócios fictícios só para demonstração.</p>
+        </form>
+      </div>
+
+      <nav class="abas" role="tablist">
+        <button role="tab" type="button" data-aba="aguardando" aria-selected="true">Aguardando você <span class="selo" id="selo-aguardando">0</span></button>
+        <button role="tab" type="button" data-aba="time" aria-selected="false">Time</button>
+        <button role="tab" type="button" data-aba="atividade" aria-selected="false">Atividade</button>
+        <button role="tab" type="button" data-aba="negocios" aria-selected="false">Negócios</button>
+      </nav>
+
+      <section class="aba" data-aba="aguardando" role="tabpanel">
+        <div id="lista-aguardando" class="lista-cards"></div>
+      </section>
+      <section class="aba" data-aba="time" role="tabpanel" hidden>
+        <ul id="lista-time" class="lista-time"></ul>
+      </section>
+      <section class="aba" data-aba="atividade" role="tabpanel" hidden>
+        <ol id="lista-log" class="lista-log"></ol>
+      </section>
+      <section class="aba" data-aba="negocios" role="tabpanel" hidden>
+        <ul id="lista-negocios" class="lista-negocios"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <!-- Detalhes de um negócio -->
+  <dialog id="detalhe" class="detalhe">
+    <div class="detalhe-conteudo" id="detalhe-conteudo"></div>
+  </dialog>
+
+  <div id="avisos" class="avisos" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
