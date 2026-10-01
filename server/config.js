@@ -27,7 +27,7 @@ export const config = {
   modeloIA: (process.env.MODELO_IA || 'claude-opus-5-5').trim(),
   esforcoIA: ['low', 'medium', 'high', 'xhigh', 'max'].includes(process.env.ESFORCO_IA) ? process.env.ESFORCO_IA : 'medium',
   // Site da BLUE ROSE (vai nas propostas e mensagens)
-  siteUrl: (process.env.SITE_URL || 'https://cauacaetano.github.io/blue-rose-automacao-express/clinicas.html').trim(),
+  siteUrl: (process.env.SITE_URL || 'https://cauacaetano.github.io/blue-rose-automacao-express/').trim(),
   // Pasta onde o Dev salva as prévias em HTML
   pastaPrevias: path.resolve(RAIZ, process.env.PASTA_PREVIAS || './previas'),
 };

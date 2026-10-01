@@ -22,7 +22,7 @@ envia nada para ninguém.
 
 ## Sobre o projeto
 
-A [BLUE ROSE](https://cauacaetano.github.io/blue-rose-automacao-express/clinicas.html) faz sites e
+A [BLUE ROSE](https://cauacaetano.github.io/blue-rose-automacao-express/) faz sites e
 automação de atendimento no WhatsApp para clínicas, consultórios e negócios locais. Este projeto
 transforma o processo comercial da empresa em um escritório que dá para **ver trabalhando**:
 cada agente é um personagem que anda pelo corredor, senta na mesa, digita (o monitor acende),
