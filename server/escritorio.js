@@ -18,6 +18,7 @@ import { criarFluxo } from './agentes/fluxo.js';
 import { iaAtiva } from './ia/cliente.js';
 import { config } from './config.js';
 import { linksWhatsapp } from './whatsapp.js';
+import { agendarSincronizacao, estadoSupabase } from './supabase.js';
 
 export class Escritorio {
   constructor({ velocidade = 1 } = {}) {
@@ -64,6 +65,7 @@ export class Escritorio {
   }
 
   emitirNegocio(id) {
+    agendarSincronizacao(id, (texto) => this.log({ tipo: 'erro', texto }));
     this.emitir('negocio', resumoNegocio(db.obterNegocio(id)));
     this.emitir('contadores', db.contadores());
     this.agentes.get('gerente').atualizarAlerta();
@@ -84,6 +86,7 @@ export class Escritorio {
     return {
       velocidade: this.relogio.velocidade,
       ia: { ativa: iaAtiva(), modelo: config.modeloIA },
+      supabase: estadoSupabase(),
       agentes: this.listaAgentes().map((a) => a.publico()),
       aguardando: db.negociosAguardando().map(resumoNegocio),
       negocios: db.listarNegocios().slice(0, 50).map(resumoNegocio),

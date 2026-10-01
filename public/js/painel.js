@@ -155,6 +155,15 @@ export class Painel {
         li.querySelector('.cargo').textContent = `· ${a.cargo}`;
         li.title = `${a.especialidade}: ${a.papel}`;
         li.addEventListener('click', () => this.aoSelecionarAgente(a.id));
+        // Cabeçalho do departamento (o time chega ordenado por departamento)
+        if (a.departamento && a.departamento !== this._ultimoDepto) {
+          const cab = document.createElement('li');
+          cab.className = 'cabecalho-depto';
+          cab.textContent = a.departamento;
+          this.el.time.appendChild(cab);
+          this._ultimoDepto = a.departamento;
+        }
+        if (a.chefe) li.classList.add('chefe');
         this.el.time.appendChild(li);
       }
       const chip = li.querySelector('.chip');
@@ -170,7 +179,7 @@ export class Painel {
     return `
       <button type="button" class="fechar" aria-label="Fechar">×</button>
       <h3>${esc(a.nome)} <span class="chip ${a.estado}">${esc(ROTULO_ESTADO[a.estado] || a.estado)}</span></h3>
-      <div class="cargo">${esc(a.cargo)} · ${esc(a.especialidade)}</div>
+      <div class="cargo">${esc(a.cargo)} · ${esc(a.especialidade)}${a.departamento ? ` · ${esc(a.departamento)}` : ''}</div>
       <p class="papel">${esc(a.papel)}</p>
       <div><strong>Agora:</strong> ${esc(a.status)}</div>
       <div style="margin-top:4px;color:var(--texto-suave)">Tarefas na fila: ${a.fila}</div>`;
@@ -252,6 +261,44 @@ export class Painel {
     }));
   }
 
+  /** Entregas do time de Marketing (Nina, Júlia e Caio) */
+  htmlMarketing(a, origem) {
+    const vazio = (quem) => `<div class="vazio">${quem} ainda não entregou.</div>`;
+    const id = a.identidade?.conteudo, ct = a.conteudo?.conteudo, an = a.anuncio?.conteudo;
+    return `
+      <h4>🎨 Identidade visual <small class="meta">— Nina ${origem(a.identidade?.origem)}</small></h4>
+      ${id ? `
+        <div class="paleta">${Object.entries(id.paleta || {}).map(([nome, cor]) =>
+          `<span class="cor" style="--c:${esc(cor)}"><i></i>${esc(nome)}<code>${esc(cor)}</code></span>`).join('')}</div>
+        <p><strong>Fontes:</strong> ${esc(id.fonte_titulos)} (títulos) e ${esc(id.fonte_textos)} (textos)</p>
+        <p><strong>Estilo:</strong> ${esc(id.estilo)}<br><strong>Tom de voz:</strong> ${esc(id.tom_de_voz)}</p>` : vazio('A designer')}
+      <h4>📱 Instagram <small class="meta">— Júlia ${origem(a.conteudo?.origem)}</small></h4>
+      ${ct ? `<pre>${esc(ct.bio_instagram)}</pre>
+        <dl class="faq">${(ct.posts || []).map((p) => `<dt>${esc(p.titulo)}</dt><dd>${esc(p.legenda)}</dd>`).join('')}</dl>` : vazio('A estrategista de conteúdo')}
+      <h4>📣 Anúncio local <small class="meta">— Caio ${origem(a.anuncio?.origem)}</small></h4>
+      ${an ? `<div class="anuncio">
+          <div class="meta">${esc(an.plataforma)} · ${esc(an.publico)} · R$ ${esc(an.orcamento_diario)}/dia</div>
+          <strong>${esc(an.titulo)}</strong><p>${esc(an.texto)}</p><span class="botao">${esc(an.chamada)}</span>
+        </div>` : vazio('O gestor de tráfego')}`;
+  }
+
+  /** Entregas do time de Tecnologia (Rita e Lucas) */
+  htmlTecnologia(a, origem) {
+    const vazio = (quem) => `<div class="vazio">${quem} ainda não entregou.</div>`;
+    const seo = a.seo?.conteudo, au = a.automacao?.conteudo;
+    return `
+      <h4>🔎 SEO <small class="meta">— Rita ${origem(a.seo?.origem)}</small></h4>
+      ${seo ? `<div class="serp"><span class="serp-titulo">${esc(seo.titulo)}</span><span class="serp-desc">${esc(seo.descricao)}</span></div>
+        <p><strong>Palavras-chave:</strong> ${(seo.palavras_chave || []).map((k) => `<span class="chip">${esc(k)}</span>`).join(' ')}</p>
+        <ul>${(seo.checklist || []).map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : vazio('A dev de SEO')}
+      <h4>🤖 Robô de WhatsApp <small class="meta">— Lucas ${origem(a.automacao?.origem)}</small></h4>
+      ${au ? `<div class="conversa">
+          <div class="msg">${esc(au.boas_vindas)}</div>
+          ${(au.menu || []).map((m) => `<div class="msg cliente">${esc(m.opcao)}</div><div class="msg">${esc(m.resposta)}</div>`).join('')}
+          <div class="msg fora">🌙 ${esc(au.fora_do_horario)}</div>
+        </div>` : vazio('O dev de automação')}`;
+  }
+
   async abrirDetalhe(id, abaInicial = 'proposta') {
     let d;
     try {
@@ -283,6 +330,8 @@ export class Painel {
         <button type="button" data-aba="proposta">Proposta</button>
         <button type="button" data-aba="mensagem">Mensagem</button>
         <button type="button" data-aba="previa">Prévia</button>
+        <button type="button" data-aba="marketing">Marketing</button>
+        <button type="button" data-aba="tecnologia">Tecnologia</button>
         <button type="button" data-aba="respostas">Respostas</button>
         <button type="button" data-aba="historico">Histórico</button>
       </nav>
@@ -325,6 +374,8 @@ export class Painel {
             <iframe class="celular" sandbox="allow-same-origin" src="/api/negocios/${n.id}/previa?v=${d.previa.versao}" title="Prévia da página"></iframe>
           </div>` : '<div class="vazio">O Dev ainda não montou a prévia.</div>'}
       </section>
+      <section class="aba-detalhe" data-aba="marketing">${this.htmlMarketing(d.artefatos || {}, origem)}</section>
+      <section class="aba-detalhe" data-aba="tecnologia">${this.htmlTecnologia(d.artefatos || {}, origem)}</section>
       <section class="aba-detalhe" data-aba="respostas">
         ${d.respostas ? `<p class="meta">Respostas prontas do Atendente ${origem(d.respostas.origem)}</p><dl class="faq">${d.respostas.conteudo.map((r) => `<dt>${esc(r.pergunta)}</dt><dd>${esc(r.resposta)}</dd>`).join('')}</dl>` : '<div class="vazio">O Atendente ainda não preparou as respostas.</div>'}
         ${d.revisoes.length ? `<h4>Revisões</h4><ul class="linha-tempo">${d.revisoes.map((r) => `<li><time>${dataHora(r.criado_em)}</time>${r.aprovada ? '✅' : '↩️'} ${esc(r.notas)}</li>`).join('')}</ul>` : ''}

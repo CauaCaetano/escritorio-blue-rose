@@ -1,7 +1,7 @@
 {
   "name": "escritorio-blue-rose",
   "productName": "Escritório BLUE ROSE",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Escritório virtual em pixel art onde agentes de IA da BLUE ROSE prospectam clientes, escrevem propostas e montam prévias de páginas.",
   "author": "Cauã Caetano — BLUE ROSE",
   "type": "module",
@@ -27,8 +27,10 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
+    "@supabase/supabase-js": "^2.117.2",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
+    "three": "^0.186.1",
     "ws": "^8.22.0"
   },
   "allowScripts": {

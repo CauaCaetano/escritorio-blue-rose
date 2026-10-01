@@ -13,6 +13,7 @@ import { config, RAIZ } from './config.js';
 import * as db from './db.js';
 import { Escritorio, ErroUsuario, resumoNegocio } from './escritorio.js';
 import { normalizarWhatsapp } from './whatsapp.js';
+import { supabaseConfigurado, sincronizarTudo } from './supabase.js';
 
 db.abrirBanco(config.caminhoBanco);
 const escritorio = new Escritorio({ velocidade: config.velocidadeInicial });
@@ -21,6 +22,8 @@ const app = express();
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(RAIZ, 'public')));
 app.use('/shared', express.static(path.join(RAIZ, 'shared')));
+// Three.js (visão 3D) servido localmente: funciona sem internet e no aplicativo
+app.use('/vendor/three', express.static(path.join(RAIZ, 'node_modules', 'three')));
 
 // Transforma erros de async em respostas JSON
 const rota = (fn) => async (req, res) => {
@@ -99,6 +102,7 @@ app.get('/api/negocios/:id', rota((req) => {
     previa: previa ? { id: previa.id, versao: previa.versao, origem: previa.origem, arquivo: previa.arquivo, criado_em: previa.criado_em } : null,
     revisoes: db.revisoesDoNegocio(id),
     respostas: db.ultimasRespostas(id),
+    artefatos: db.artefatosDoNegocio(id),
     decisoes: db.decisoesDoNegocio(id),
     historico: db.historicoDoNegocio(id),
   };
@@ -155,6 +159,11 @@ servidor.listen(config.porta, config.host, () => {
     ? `  IA real: LIGADA (modelo ${config.modeloIA}, esforço ${config.esforcoIA})\n`
     : '  IA real: desligada — modo simulado (coloque ANTHROPIC_API_KEY no .env)\n');
   escritorio.iniciar();
+  if (supabaseConfigurado()) {
+    console.log('  Supabase: LIGADO (espelhando os dados na nuvem)\n');
+    sincronizarTudo((texto) => escritorio.log({ tipo: 'erro', texto }))
+      .then((n) => console.log(`  Supabase: ${n} negócios sincronizados.`));
+  }
 });
 
 // Encerramento limpo (Ctrl+C)

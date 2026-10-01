@@ -262,8 +262,9 @@ function tapeteMesa(ctx, o) {
   const px = o.x * TILE + 3, py = o.y * TILE + 6, w = o.w * TILE - 6, h = o.h * TILE - 8;
   ctx.fillStyle = 'rgba(0,0,0,.15)';
   ctx.fillRect(px + 1, py + 2, w, h);
-  ret(ctx, px, py, w, h, '#2a2f45');
-  ret(ctx, px + 2, py + 2, w - 4, h - 4, '#343a55');
+  // Cor do departamento (vendas, marketing ou tecnologia), se houver
+  ret(ctx, px, py, w, h, o.cor ? sombrear(o.cor, 0.3) : '#2a2f45');
+  ret(ctx, px + 2, py + 2, w - 4, h - 4, o.cor || '#343a55');
   ctx.strokeStyle = 'rgba(201,165,74,.8)';
   ctx.lineWidth = 1;
   ctx.strokeRect(px + 3.5, py + 3.5, w - 7, h - 7);

@@ -124,10 +124,13 @@ const escaparHtml = (s = '') => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Prévia de landing page em HTML (modelo simulado) */
-export function gerarPreviaHtml(negocio, { correcao } = {}) {
-  const d = dadosDoTipo(negocio.tipo);
+export function gerarPreviaHtml(negocio, { correcao, identidade, seo } = {}) {
+  const d = { ...dadosDoTipo(negocio.tipo) };
+  if (identidade?.paleta?.primaria) d.cor = identidade.paleta.primaria;
   const nome = escaparHtml(negocio.nome);
   const cidade = escaparHtml(negocio.cidade);
+  const titulo = escaparHtml(seo?.titulo || `${negocio.nome} — ${negocio.cidade}`);
+  const descricao = seo?.descricao ? `\n<meta name="description" content="${escaparHtml(seo.descricao)}">` : '';
   const servicos = d.servicos.map((s) => `<li>${escaparHtml(s)}</li>`).join('');
   const rodapeExtra = correcao ? `<p class="nota">Versão corrigida: ${escaparHtml(correcao)}</p>` : '';
   return `<!doctype html>
@@ -135,7 +138,7 @@ export function gerarPreviaHtml(negocio, { correcao } = {}) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${nome} — ${cidade}</title>
+<title>${titulo}</title>${descricao}
 <style>
   :root { --cor: ${d.cor}; }
   * { box-sizing: border-box; }
@@ -215,6 +218,74 @@ export function analisarNegocio(n) {
     oportunidades: ['Página única com serviços e horários', 'Botão de WhatsApp em destaque', 'Respostas automáticas para preço e agendamento'],
     servico_recomendado: 'Site + Automação',
     prioridade: semInsta ? 'alta' : 'média',
+  };
+}
+
+// ---------------------------------------------------------------
+// Marketing e tecnologia (modo simulado)
+// ---------------------------------------------------------------
+const clarear = (hex, t) => {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [16, 8, 0].map((s) => Math.round(((n >> s) & 255) + (255 - ((n >> s) & 255)) * t));
+  return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+};
+
+export function identidadeVisual(n) {
+  const cor = dadosDoTipo(n.tipo).cor;
+  return {
+    paleta: { primaria: cor, secundaria: clarear(cor, 0.35), destaque: '#c9a54a', fundo: '#faf8f5', texto: '#1d1d24' },
+    fonte_titulos: 'Playfair Display',
+    fonte_textos: 'Inter',
+    estilo: `Limpo e acolhedor, com a cor principal do ${n.tipo || 'negócio'} em destaque e bastante espaço em branco.`,
+    tom_de_voz: 'Próximo, direto e confiável.',
+  };
+}
+
+export function conteudoSocial(n) {
+  const s = dadosDoTipo(n.tipo).servicos;
+  return {
+    bio_instagram: `${n.tipo || 'Negócio local'} em ${(n.cidade || '').split(' - ')[0]} ✨ ${s[0]} e ${s[1].toLowerCase()} · Agende pelo WhatsApp 👇`,
+    posts: [
+      { titulo: `Conheça nosso ${s[0].toLowerCase()}`, legenda: `Mostre o antes e depois e convide para agendar pelo WhatsApp.` },
+      { titulo: 'Perguntas frequentes', legenda: 'Responda em carrossel as 3 dúvidas que mais chegam no direct.' },
+      { titulo: 'Bastidores da equipe', legenda: 'Apresente quem atende: gera confiança e aproxima.' },
+    ],
+  };
+}
+
+export function anuncioLocal(n) {
+  const cidade = (n.cidade || 'sua cidade').split(' - ')[0];
+  return {
+    plataforma: 'Instagram e Facebook (Meta Ads)',
+    titulo: `${n.nome} em ${cidade}`,
+    texto: `Atendimento rápido e de confiança em ${cidade}. Chame no WhatsApp e agende em minutos.`,
+    chamada: 'Enviar mensagem',
+    publico: `Pessoas de 22 a 55 anos num raio de 5 km de ${cidade}`,
+    orcamento_diario: 15,
+  };
+}
+
+export function planoSeo(n) {
+  const cidade = (n.cidade || '').split(' - ')[0];
+  const tipo = n.tipo || 'Negócio local';
+  return {
+    titulo: `${n.nome} | ${tipo} em ${cidade}`.slice(0, 60),
+    descricao: `${tipo} em ${cidade}. Atendimento rápido, horários flexíveis e agendamento pelo WhatsApp. Conheça a ${n.nome}.`.slice(0, 155),
+    palavras_chave: [`${tipo.toLowerCase()} ${cidade.toLowerCase()}`, `${tipo.toLowerCase()} perto de mim`, `agendar ${tipo.toLowerCase()}`, `${n.nome.toLowerCase()}`, `${tipo.toLowerCase()} whatsapp`],
+    checklist: ['Criar/atualizar o Perfil da Empresa no Google', 'Mesmo nome, endereço e telefone em todos os lugares', 'Dados estruturados LocalBusiness na página', 'Página leve e rápida no celular'],
+  };
+}
+
+export function roteiroAutomacao(n) {
+  return {
+    boas_vindas: `Oi! 👋 Aqui é da ${n.nome}. Como posso te ajudar? Responda com o número:`,
+    menu: [
+      { opcao: '1 - Agendar horário', resposta: 'Ótimo! Me diga o dia e o período (manhã/tarde) que você prefere. 📅' },
+      { opcao: '2 - Preços e serviços', resposta: 'Nossos valores começam em [preço]. Quer que eu te mande a lista completa?' },
+      { opcao: '3 - Endereço e horário', resposta: 'Estamos em [endereço], de [horário]. Te espero! 📍' },
+      { opcao: '4 - Falar com uma pessoa', resposta: 'Perfeito, já vou te passar para o atendimento. Um instante! 🙂' },
+    ],
+    fora_do_horario: 'Agora estamos fora do horário, mas sua mensagem já ficou registrada. Respondemos assim que abrirmos! 🌙',
   };
 }
 

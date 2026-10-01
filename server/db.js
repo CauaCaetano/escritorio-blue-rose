@@ -106,6 +106,20 @@ CREATE TABLE IF NOT EXISTS tarefas (
   concluida_em TEXT
 );
 
+-- Entregas dos especialistas de marketing e tecnologia
+-- tipo: identidade | conteudo | anuncio | seo | automacao
+CREATE TABLE IF NOT EXISTS artefatos (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  negocio_id  INTEGER NOT NULL REFERENCES negocios(id),
+  tipo        TEXT NOT NULL,
+  versao      INTEGER NOT NULL,
+  conteudo    TEXT NOT NULL,           -- JSON
+  agente      TEXT,
+  origem      TEXT NOT NULL DEFAULT 'simulado',
+  criado_em   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_artefatos ON artefatos(negocio_id, tipo, versao);
+
 CREATE INDEX IF NOT EXISTS idx_tarefas_fila ON tarefas(agente, status, prioridade, id);
 CREATE INDEX IF NOT EXISTS idx_historico_id ON historico(id);
 
@@ -254,6 +268,26 @@ export function salvarRespostas(negocioId, lista, origem = 'simulado') {
 export function ultimasRespostas(negocioId) {
   const r = db.prepare('SELECT * FROM respostas WHERE negocio_id = ? ORDER BY id DESC LIMIT 1').get(negocioId);
   return r ? { ...r, conteudo: JSON.parse(r.conteudo) } : null;
+}
+
+export function salvarArtefato(negocioId, tipo, conteudo, { agente = null, origem = 'simulado' } = {}) {
+  const versao = db.prepare('SELECT COALESCE(MAX(versao), 0) + 1 AS v FROM artefatos WHERE negocio_id = ? AND tipo = ?')
+    .get(negocioId, tipo).v;
+  db.prepare(`INSERT INTO artefatos (negocio_id, tipo, versao, conteudo, agente, origem, criado_em)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`).run(negocioId, tipo, versao, JSON.stringify(conteudo), agente, origem, agora());
+  return ultimoArtefato(negocioId, tipo);
+}
+export function ultimoArtefato(negocioId, tipo) {
+  const r = db.prepare('SELECT * FROM artefatos WHERE negocio_id = ? AND tipo = ? ORDER BY versao DESC LIMIT 1').get(negocioId, tipo);
+  return r ? { ...r, conteudo: JSON.parse(r.conteudo) } : null;
+}
+/** Última versão de cada tipo: { identidade: {...}, seo: {...}, ... } */
+export function artefatosDoNegocio(negocioId) {
+  const linhas = db.prepare(`SELECT a.* FROM artefatos a
+      JOIN (SELECT tipo, MAX(versao) v FROM artefatos WHERE negocio_id = ? GROUP BY tipo) u
+        ON a.tipo = u.tipo AND a.versao = u.v
+      WHERE a.negocio_id = ?`).all(negocioId, negocioId);
+  return Object.fromEntries(linhas.map((r) => [r.tipo, { ...r, conteudo: JSON.parse(r.conteudo) }]));
 }
 
 export function salvarDecisao(negocioId, decisao, comentario = null) {

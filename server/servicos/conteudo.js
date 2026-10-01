@@ -51,16 +51,32 @@ export function redigirProposta(negocio, comentario) {
   );
 }
 
-export function gerarPrevia(negocio, { correcao, proposta, previaAnterior } = {}) {
+// ---------------------------------------------------------------
+// Marketing e tecnologia
+// ---------------------------------------------------------------
+const pedirSobre = (agente, pedido, negocio, simulado, maxTokens = 4000) => comPlanoB(
+  () => chamar(agente, `${pedido}\n${P.fichaNegocio(negocio)}`, maxTokens),
+  () => simulado(negocio),
+);
+
+export const identidadeVisual = (n) => pedirSobre(P.DESIGNER, 'Crie a identidade visual da prévia para:', n, sim.identidadeVisual);
+export const conteudoSocial = (n) => pedirSobre(P.CONTEUDO, 'Crie a bio e as ideias de posts para:', n, sim.conteudoSocial);
+export const anuncioLocal = (n) => pedirSobre(P.ANUNCIOS, 'Crie o anúncio local para:', n, sim.anuncioLocal);
+export const planoSeo = (n) => pedirSobre(P.SEO, 'Defina o SEO da página de:', n, sim.planoSeo);
+export const roteiroAutomacao = (n) => pedirSobre(P.AUTOMACAO, 'Monte o roteiro do robô de WhatsApp de:', n, sim.roteiroAutomacao);
+
+export function gerarPrevia(negocio, { correcao, proposta, previaAnterior, identidade, seo } = {}) {
   const mensagem = [
     `Crie a prévia da página para:\n${P.fichaNegocio(negocio)}`,
+    identidade ? `\n\nIDENTIDADE VISUAL (da designer Nina):\n${JSON.stringify(identidade)}` : '',
+    seo ? `\n\nSEO (da Rita): título "${seo.titulo}" · descrição "${seo.descricao}"` : '',
     proposta ? `\n\nProposta aprovada pelo time (use como base do conteúdo):\n${proposta.proposta}` : '',
     correcao ? `\n\nCORREÇÃO PEDIDA: ${correcao}` : '',
     correcao && previaAnterior ? `\n\nHTML anterior (corrija a partir dele):\n${previaAnterior.html}` : '',
   ].join('');
   return comPlanoB(
     () => chamar(P.DEV, mensagem, 24000),
-    () => ({ html: sim.gerarPreviaHtml(negocio, { correcao }), resumo: correcao ? 'Correção aplicada.' : 'Prévia criada.' }),
+    () => ({ html: sim.gerarPreviaHtml(negocio, { correcao, identidade, seo }), resumo: correcao ? 'Correção aplicada.' : 'Prévia criada.' }),
   );
 }
 

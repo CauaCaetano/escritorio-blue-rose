@@ -4,19 +4,20 @@
 
 # Escritório BLUE ROSE
 
-**Um escritório virtual em pixel art onde agentes de IA trabalham de verdade.**
+**Um escritório virtual em 3D (e em pixel art) onde 14 agentes de IA trabalham de verdade.**
 
-Seis especialistas em IA prospectam negócios locais, escrevem propostas, montam prévias de
-landing pages e revisam tudo. Depois, param e esperam a **sua aprovação**. Nenhum agente
-envia nada para ninguém.
+Um time completo de especialistas em IA (diretoria, vendas, marketing e tecnologia) analisa
+negócios locais, cria identidade visual, posts, anúncio, proposta, landing page e robô de
+WhatsApp, revisa tudo e para esperando a **sua aprovação**. Nenhum agente envia nada para ninguém.
 
-![Node.js](https://img.shields.io/badge/Node.js-22%2B-3c873a?logo=node.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22.13%2B-3c873a?logo=node.js&logoColor=white)
 ![Claude API](https://img.shields.io/badge/IA-Claude%20(Anthropic)-c9a54a)
-![SQLite](https://img.shields.io/badge/SQLite-persistente-1f3a8a?logo=sqlite&logoColor=white)
-![WebSocket](https://img.shields.io/badge/WebSocket-tempo%20real-14286b)
+![Three.js](https://img.shields.io/badge/3D-Three.js-1f3a8a?logo=threedotjs&logoColor=white)
+![SQLite + Supabase](https://img.shields.io/badge/dados-SQLite%20%2B%20Supabase-3ecf8e?logo=supabase&logoColor=white)
+![Windows](https://img.shields.io/badge/app-Windows-14286b?logo=windows&logoColor=white)
 ![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-e8dcc4)
 
-![O escritório em funcionamento, tema claro](docs/prints/escritorio-claro.png)
+![O escritório em 3D, de dia](docs/prints/escritorio-3d.png)
 
 </div>
 
@@ -30,49 +31,56 @@ lê e entrega envelopes para o colega da próxima etapa.
 
 **Destaques**
 
+- 🏢 **Escritório em 3D (Three.js):** gire, aproxime e arraste a câmera; dia e noite com a cidade
+  acesa nas janelas. Também há uma visão 2D em pixel art, e as duas mostram o mesmo escritório.
 - 🤖 **IA real com plano B:** os agentes usam a API do Claude. Sem chave, sem créditos ou com a
   API fora do ar, o erro aparece no log e o escritório continua funcionando no modo simulado.
-- 🎨 **Pixel art feita 100% em código:** nenhuma imagem externa. São tiles de 16px desenhados
-  em canvas e ampliados sem suavização, com tema claro (dia) e escuro (noite, com a cidade acesa).
 - ⚡ **Backend no controle:** o servidor decide tudo (filas, caminhos, estados) e envia eventos por
   WebSocket. O navegador só desenha.
-- 💾 **Nada se perde:** negócios, propostas, prévias, decisões, histórico e as filas de cada agente
-  ficam no SQLite. Se o servidor reiniciar, o trabalho continua de onde parou.
+- 💾 **Nada se perde:** tudo fica no SQLite local (inclusive a fila de cada agente) e, se você
+  quiser, é espelhado no **Supabase**. Se o servidor reiniciar, o trabalho continua de onde parou.
 - 🔒 **Humano no comando:** tudo para em "aguardando aprovação". A mensagem aprovada é exportada
   por você (copiar ou abrir o WhatsApp com o texto pronto) e o envio é sempre manual.
-- 📱 **Responsivo:** funciona no computador e no celular.
+- 🪟 **Aplicativo para Windows:** instalador com atalho na área de trabalho, sem precisar de Node.
 
-## O time
+## O time (14 agentes)
 
-| | Agente | Especialidade | O que faz |
-|---|---|---|---|
-| 👔 | **Henrique · Gerente** | Gerente de Operações | Recebe os pedidos, confere o pacote final e escreve o resumo para aprovação. Mostra um **"!"** dourado quando há algo esperando você. |
-| 🔎 | **Rafael · Prospector** | Analista de Prospecção Local | Analisa o negócio cadastrado e recomenda o serviço ideal (sem raspagem de sites). |
-| ✍️ | **Lívia · Redatora** | Redatora de Vendas | Escreve a proposta com os preços reais e a mensagem de primeiro contato. |
-| 💻 | **Diego · Dev** | Desenvolvedor Front-end | Gera a prévia da landing page em HTML, pensada primeiro para o celular. |
-| 🧐 | **Marta · Revisora** | Revisora de Qualidade | Confere texto, links e versão mobile (IA + verificações automáticas); pode devolver para o Dev. |
-| 💬 | **Bianca · Atendente** | Especialista em Atendimento | Prepara respostas prontas sobre preço, prazo, mensalidade e funcionamento. |
+| Departamento | Agente | O que faz |
+|---|---|---|
+| Diretoria | **Henrique · CEO** ★ | Recebe os pedidos, distribui, confere o pacote final e escreve o resumo para você aprovar ("!" dourado quando há algo esperando você). |
+| Vendas | **Vitória · Head de Vendas** ★ | Define a abordagem comercial e passa o negócio ao SDR. |
+| Vendas | **Rafael · SDR** | Analisa o negócio cadastrado e recomenda o serviço ideal (sem raspagem de sites). |
+| Vendas | **Lívia · Closer** | Escreve a proposta com os preços reais e a mensagem de primeiro contato. |
+| Vendas | **Bianca · Customer Success** | Prepara respostas prontas sobre preço, prazo, mensalidade e funcionamento. |
+| Marketing | **Sofia · Head de Marketing** ★ | Define a mensagem da marca do cliente e coordena o time. |
+| Marketing | **Nina · Designer de Marca** | Cria a identidade visual da prévia: paleta, fontes e estilo. |
+| Marketing | **Júlia · Estrategista de Conteúdo** | Escreve a bio do Instagram e ideias de posts. |
+| Marketing | **Caio · Gestor de Tráfego** | Monta um anúncio local (Meta/Google) com público e orçamento sugeridos. |
+| Tecnologia | **André · CTO** ★ | Planeja a página e a automação de cada negócio. |
+| Tecnologia | **Rita · Dev SEO** | Define título, descrição e palavras-chave para aparecer no Google. |
+| Tecnologia | **Diego · Dev Front-end** | Gera a prévia da landing page em HTML com a identidade e o SEO do time. |
+| Tecnologia | **Lucas · Dev de Automação** | Monta o roteiro do robô de WhatsApp: boas-vindas, menu e respostas. |
+| Tecnologia | **Marta · QA** | Confere texto, links e versão mobile; pode devolver para o Diego. |
 
 ```mermaid
 flowchart LR
-    V([Você]) -->|cadastra negócio| G[Henrique<br>Gerente]
-    G --> P[Rafael<br>Prospector]
-    P --> R[Lívia<br>Redatora]
-    R --> D[Diego<br>Dev]
-    D --> M[Marta<br>Revisora]
-    M -->|achou erro| D
-    M --> A[Bianca<br>Atendente]
-    A --> G2[Henrique<br>Gerente]
-    G2 --> Q{Aguardando<br>você}
+    V([Você]) -->|cadastra negócio| CEO[Henrique<br>CEO]
+    CEO --> HV[Vitória<br>Head de Vendas] --> SDR[Rafael<br>SDR]
+    SDR --> HM[Sofia<br>Head de Marketing] --> NI[Nina<br>Identidade] --> JU[Júlia<br>Conteúdo] --> CA[Caio<br>Anúncio]
+    CA --> LI[Lívia<br>Proposta]
+    LI --> CTO[André<br>CTO] --> RI[Rita<br>SEO] --> DI[Diego<br>Prévia] --> LU[Lucas<br>Robô WhatsApp] --> MA[Marta<br>QA]
+    MA -->|achou erro| DI
+    MA --> BI[Bianca<br>Respostas] --> CEO2[Henrique<br>confere tudo]
+    CEO2 --> Q{Aguardando<br>você}
     Q -->|Aprovar| E[Exportar mensagem<br>copiar / WhatsApp]
-    Q -->|Pedir ajuste| R
+    Q -->|Pedir ajuste| LI
 ```
 
 ## Prints
 
-| Noite (tema escuro) | Celular |
+| 3D à noite | Visão 2D em pixel art |
 |---|---|
-| ![Tema escuro com a cidade iluminada](docs/prints/escritorio-escuro.png) | ![Versão para celular](docs/prints/celular.png) |
+| ![Escritório 3D à noite, com a cidade iluminada](docs/prints/escritorio-3d-noite.png) | ![Visão 2D em pixel art](docs/prints/escritorio-2d.png) |
 
 ## Como rodar
 
@@ -119,19 +127,33 @@ sem levar a sua chave. Use o menu **Escritório → Configurar chave da API** pa
 | `SITE_URL` | site da BLUE ROSE | Link usado nas propostas e mensagens. |
 | `PORT` / `HOST` | `3000` / `127.0.0.1` | Endereço do servidor. Use `HOST=0.0.0.0` para abrir no celular pela rede Wi-Fi. |
 
-> **Custo aproximado:** com o modelo padrão, cada negócio completo custa algo em torno de
-> US$ 0,30 a 0,60.
+> **Custo aproximado:** com o modelo padrão, cada negócio completo usa 11 chamadas à IA
+> (cerca de 45 mil tokens), algo em torno de US$ 0,50.
+
+### Espelho no Supabase (opcional)
+
+O escritório grava tudo no SQLite local e pode **espelhar automaticamente no Supabase** (Postgres
+na nuvem), útil para backup, para ver os dados de outro lugar ou para montar painéis.
+
+1. Crie um projeto em <https://supabase.com> (o plano grátis serve).
+2. No **SQL Editor**, rode o arquivo [`supabase/schema.sql`](supabase/schema.sql). Ele cria as
+   tabelas com **RLS ligado e sem acesso público**.
+3. Em **Project Settings → API**, copie a **Project URL** e a chave **service_role** para o `.env`:
+   `SUPABASE_URL=` e `SUPABASE_SERVICE_ROLE_KEY=`. Essa chave é secreta e fica só no servidor.
+4. Reinicie. O topo do painel mostra **☁ Supabase**, e cada negócio é enviado poucos segundos
+   depois de qualquer mudança. Se a nuvem falhar, o aviso aparece no log e nada trava.
 
 ## Como usar
 
 1. **Negócio real:** preencha nome, tipo, cidade, Instagram, WhatsApp e observações e clique em
-   *Entregar ao Gerente*. Para só ver o escritório funcionando, use **Demonstração**, que cria
+   *Entregar ao Gerente* (o CEO Henrique). Para só ver o escritório funcionando, use **Demonstração**, que cria
    negócios fictícios.
-2. Acompanhe os agentes no mapa. Clique em um personagem para ver o cargo e o que ele está fazendo.
-   Use **1x / 2x / 4x** para acelerar.
+2. Acompanhe os agentes no escritório (**3D** ou **2D**, no topo). Clique em um personagem para ver
+   o cargo e o que ele está fazendo; no 3D, a câmera desliza até ele. Use **1x / 2x / 4x** para acelerar.
 3. Em **Aguardando você**, leia o resumo do Gerente e a mensagem. Em *Ver detalhes* há a proposta,
-   a prévia (visão de celular ou computador), as respostas prontas e o histórico.
-4. Clique em **Aprovar** ou **Pedir ajuste** (o ajuste volta para a Redatora com o seu comentário).
+   a prévia (visão de celular ou computador), o **Marketing** (paleta de cores, posts e anúncio), a
+   **Tecnologia** (SEO e robô de WhatsApp), as respostas prontas e o histórico.
+4. Clique em **Aprovar** ou **Pedir ajuste** (o ajuste volta para a Lívia com o seu comentário).
 5. Depois de aprovar, a aba **✉ Enviar** permite editar a mensagem e **copiar** ou
    **abrir o WhatsApp** com o texto pronto. Quem envia é você.
 
@@ -140,11 +162,12 @@ As prévias em HTML ficam salvas na pasta `previas/`.
 ## Arquitetura
 
 ```
-Navegador (canvas + painel)  ◄── WebSocket (eventos) ───  Servidor Node.js
-        │                                                   ├─ Escritório (orquestra)
-        └──── REST (/api: cadastrar, aprovar, ajuste) ────► ├─ 6 agentes, cada um com sua fila
-                                                            ├─ Serviços: Claude API → plano B simulado
-                                                            └─ SQLite (tudo persistido)
+Navegador (3D Three.js ou 2D)  ◄── WebSocket (eventos) ───  Servidor Node.js
+        │                                                     ├─ Escritório (orquestra)
+        └──── REST (/api: cadastrar, aprovar, ajuste) ──────► ├─ 14 agentes, cada um com sua fila
+                                                              ├─ Serviços: Claude API → plano B simulado
+                                                              ├─ SQLite (tudo persistido)
+                                                              └─ Supabase (espelho opcional na nuvem)
 ```
 
 - Cada agente tem **sua própria fila** (tabela `tarefas`) e trabalha **uma tarefa por vez**.
@@ -165,8 +188,12 @@ server/
   simulado/         Dados inventados para o modo simulado
   db.js             SQLite: negócios, propostas, prévias, decisões, histórico e filas
   whatsapp.js       Monta links com o texto pronto (nunca envia)
-shared/layout.js    Mapa do escritório (usado pelo servidor e pelo navegador)
-public/             Front: canvas em pixel art + painel
+  supabase.js       Espelho opcional no Supabase
+shared/layout.js    Planta do escritório (usada pelo servidor e pelas visões 2D e 3D)
+public/js/cena3d.js Escritório 3D (Three.js): móveis, personagens, luzes e câmera
+public/js/cena.js   Escritório 2D em pixel art
+supabase/schema.sql Tabelas do Supabase (com RLS)
+electron/           Aplicativo de desktop para Windows
 test/               Testes automáticos (node --test)
 ```
 
@@ -182,7 +209,8 @@ API real**. Eles também rodam no GitHub Actions a cada push.
 ## Segurança e regras
 
 - Nenhum agente envia mensagem, e-mail ou qualquer coisa para pessoas reais.
-- O Prospector não faz raspagem de sites: analisa só o que você cadastrou.
+- O SDR não faz raspagem de sites: analisa só o que você cadastrou.
+- A chave `service_role` do Supabase fica só no servidor; as tabelas têm RLS sem acesso público.
 - Chaves ficam apenas no `.env`, que está no `.gitignore` (assim como o banco e as prévias).
 - As prévias geradas pela IA são exibidas isoladas (sandbox + Content-Security-Policy, sem scripts).
 - O painel não tem login: mantenha `HOST=127.0.0.1` ou use só em rede de confiança.

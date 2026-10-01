@@ -83,6 +83,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body {
   font-family: var(--fonte);
@@ -121,6 +122,7 @@ h1, h2, h3, h4 { font-family: var(--fonte-titulo); font-weight: 600; letter-spac
   display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 10px; border-radius: 999px;
   border: 1px solid rgba(201,165,74,.5); color: #e6c878; white-space: nowrap;
 }
+.selo-ia[hidden] { display: none; }
 .selo-ia::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8a8a9a; }
 .selo-ia.ativa { color: #9ee6bd; border-color: rgba(87,196,139,.6); }
 .selo-ia.ativa::before { background: #57c48b; box-shadow: 0 0 8px #57c48b; }
@@ -159,6 +161,7 @@ h1, h2, h3, h4 { font-family: var(--fonte-titulo); font-weight: 600; letter-spac
   box-shadow: var(--sombra), inset 0 0 0 1px rgba(201, 165, 74, .45);
   display: flex; justify-content: center;
 }
+#cena[hidden] { display: none; }
 #cena {
   display: block;
   image-rendering: pixelated;
@@ -168,6 +171,48 @@ h1, h2, h3, h4 { font-family: var(--fonte-titulo); font-weight: 600; letter-spac
   touch-action: manipulation;
 }
 .dica { color: var(--texto-suave); font-size: 12px; margin: 10px 2px 0; }
+
+/* ---------- Escritório 3D ---------- */
+.cena3d { position: relative; width: 100%; border-radius: 6px; overflow: hidden; }
+.cena3d[hidden] { display: none; }
+.cena3d .canvas3d { display: block; cursor: grab; touch-action: none; }
+.cena3d .canvas3d:active { cursor: grabbing; }
+.rotulos3d { position: absolute; inset: 0; pointer-events: none; }
+.etiqueta3d {
+  font: 600 11px/1 var(--fonte); color: #fff; white-space: nowrap;
+  background: rgba(10, 13, 30, .8); border: 1px solid rgba(201, 165, 74, .55);
+  padding: 4px 8px; border-radius: 999px; transform: translateY(-2px);
+}
+/* Só o nome aparece; o cargo surge ao selecionar o personagem */
+.etiqueta3d span, .etiqueta3d .sep { display: none; color: #e6c878; font-weight: 500; }
+.etiqueta3d.selecionado { background: #1f3a8a; border-color: #e6c878; z-index: 2; }
+.etiqueta3d.selecionado span, .etiqueta3d.selecionado .sep { display: inline; }
+.balao3d {
+  min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; display: grid; place-items: center;
+  background: #fff; color: #1d1a26; font: 700 14px/1 var(--fonte); box-shadow: 0 3px 10px rgba(0,0,0,.3);
+  border: 2px solid #1d1a26;
+}
+.balao3d.vazio { display: none; }
+.balao3d.lendo { color: #6a3fb0; }
+.balao3d.aprovacao { background: #ffd23f; color: #8a1c1c; animation: pular 0.8s ease-in-out infinite; }
+.balao3d .pontos { display: flex; gap: 3px; }
+.balao3d .pontos i { width: 5px; height: 5px; border-radius: 50%; background: #2f5fd0; animation: piscar 1.2s infinite; }
+.balao3d .pontos i:nth-child(2) { animation-delay: .2s; }
+.balao3d .pontos i:nth-child(3) { animation-delay: .4s; }
+@keyframes piscar { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes pular { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+@media (prefers-reduced-motion: reduce) { .balao3d.aprovacao, .balao3d .pontos i { animation: none; } }
+.placa-depto {
+  font: 700 12px/1 var(--fonte-titulo); letter-spacing: .22em; color: #fff;
+  background: var(--cor); padding: 6px 12px; border-radius: 6px;
+  border: 1px solid #e6c878; box-shadow: 0 4px 14px rgba(0,0,0,.25); opacity: .92;
+}
+.botao-flutuante {
+  position: absolute; right: 18px; bottom: 18px; z-index: 4;
+  border: 1px solid rgba(201,165,74,.6); background: rgba(10,13,30,.82); color: #f3efe6;
+  padding: 7px 12px; border-radius: 999px; font: 600 12px var(--fonte);
+}
+.botao-flutuante[hidden] { display: none; }
 
 .contadores {
   display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px;
@@ -354,6 +399,29 @@ textarea { resize: vertical; min-height: 64px; }
   margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 13px;
   background: var(--ouro-suave); border: 1px solid var(--ouro); color: var(--texto);
 }
+.lista-time .cabecalho-depto {
+  display: block; cursor: default; padding: 10px 4px 2px; border: 0;
+  font: 700 11px/1 var(--fonte); letter-spacing: .18em; text-transform: uppercase; color: var(--ouro-texto);
+}
+.lista-time .cabecalho-depto:hover { background: none; border-color: transparent; }
+.lista-time li.chefe .nome::after { content: " ★"; color: var(--ouro); }
+.aba-detalhe h4 { margin: 16px 0 8px; font-size: 16px; }
+.aba-detalhe h4:first-child { margin-top: 0; }
+.paleta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.paleta .cor { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 8px 4px 4px; border: 1px solid var(--borda); border-radius: 999px; }
+.paleta .cor i { width: 20px; height: 20px; border-radius: 50%; background: var(--c); border: 1px solid rgba(0,0,0,.15); }
+.paleta code { color: var(--texto-suave); }
+.anuncio { border: 1px solid var(--borda); border-radius: 12px; padding: 12px; background: var(--superficie-2); }
+.anuncio p { margin: 6px 0 10px; }
+.serp { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 10px; background: var(--superficie-2); border: 1px solid var(--borda); }
+.serp-titulo { color: #1a4fd6; font-size: 17px; }
+:root[data-theme="dark"] .serp-titulo { color: #8fb0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .serp-titulo { color: #8fb0ff; } }
+.serp-desc { color: var(--texto-suave); font-size: 13px; }
+.conversa { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: #0b141a; }
+.conversa .msg { max-width: 80%; padding: 7px 10px; border-radius: 10px; background: #202c33; color: #e9edef; font-size: 13px; white-space: pre-wrap; }
+.conversa .msg.cliente { align-self: flex-end; background: #005c4b; }
+.conversa .msg.fora { opacity: .8; font-style: italic; }
 .faq dt { font-weight: 700; margin-top: 10px; }
 .faq dd { margin: 2px 0 0; color: var(--texto-suave); }
 .origem { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--superficie-2); color: var(--texto-suave); font-weight: 600; }

@@ -39,6 +39,15 @@ export class Cena {
     requestAnimationFrame((ts) => this.quadro(ts));
   }
 
+  /** Liga/desliga esta visão (a outra fica parada, sem gastar CPU) */
+  ativar(sim) {
+    this.ativo = sim;
+    this.canvas.hidden = !sim;
+    if (sim) this.ajustarTamanho();
+  }
+
+  get elemento() { return this.canvas; }
+
   definirTema(tema) {
     this.noite = tema === 'escuro';
     this.mapa = criarMapa(this.noite ? 'escuro' : 'claro');
@@ -129,6 +138,7 @@ export class Cena {
   quadro(ts) {
     const dt = Math.min(0.1, (ts - this.ultimo) / 1000);
     this.ultimo = ts;
+    if (this.ativo === false) { requestAnimationFrame((n) => this.quadro(n)); return; }
     const t = ts / 1000;
     this.animar(dt);
     this.desenharMundo(t);
@@ -230,7 +240,8 @@ export class Cena {
       if (!d) continue;
       // Rótulo "Nome · Cargo": nome em branco, cargo em dourado
       const sentado = d.sentado && !r.andando;
-      const nome = d.nome, cargo = ` · ${d.cargo}`;
+      // Só o nome (14 rótulos não cabem); o cargo aparece no selecionado
+      const nome = d.nome, cargo = this.selecionado === id ? ` · ${d.cargo}` : '';
       ctx.font = `600 ${fonte}px Inter, system-ui, sans-serif`;
       const wNome = ctx.measureText(nome).width;
       ctx.font = `500 ${fonte}px Inter, system-ui, sans-serif`;
