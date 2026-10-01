@@ -10,7 +10,7 @@ Seis especialistas em IA prospectam negócios locais, escrevem propostas, montam
 landing pages e revisam tudo. Depois, param e esperam a **sua aprovação**. Nenhum agente
 envia nada para ninguém.
 
-![Node.js](https://img.shields.io/badge/Node.js-20%2B-3c873a?logo=node.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22%2B-3c873a?logo=node.js&logoColor=white)
 ![Claude API](https://img.shields.io/badge/IA-Claude%20(Anthropic)-c9a54a)
 ![SQLite](https://img.shields.io/badge/SQLite-persistente-1f3a8a?logo=sqlite&logoColor=white)
 ![WebSocket](https://img.shields.io/badge/WebSocket-tempo%20real-14286b)
@@ -76,7 +76,7 @@ flowchart LR
 
 ## Como rodar
 
-**Requisitos:** [Node.js](https://nodejs.org) 20 ou mais novo.
+**Requisitos:** [Node.js](https://nodejs.org) 22.13 ou mais novo.
 
 ```bash
 git clone <url-deste-repositório>
@@ -87,6 +87,22 @@ npm start
 ```
 
 Abra <http://localhost:3000>. Sem chave da API, tudo funciona no **modo simulado**.
+
+### Aplicativo para Windows
+
+Também dá para usar como um programa comum, com janela própria e sem terminal:
+
+```bash
+npm run app      # abre o aplicativo a partir do código
+npm run dist     # gera o instalador e a versão portátil em dist/
+```
+
+- `Escritorio-BLUE-ROSE-Instalador-x.y.z.exe`: instala e cria atalhos no menu Iniciar e na área de trabalho.
+- `Escritorio-BLUE-ROSE-x.y.z-portatil.exe`: roda direto, sem instalar.
+
+No aplicativo, as configurações (`.env`), o banco e as prévias ficam em
+`%APPDATA%\Escritório BLUE ROSE`, **fora do executável**. Assim o `.exe` pode ser compartilhado
+sem levar a sua chave. Use o menu **Escritório → Configurar chave da API** para editar o `.env`.
 
 ### Ligando a IA real
 

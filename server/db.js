@@ -4,8 +4,11 @@
 // Guarda negócios, propostas, prévias, revisões, respostas do
 // Atendente, decisões, histórico e a FILA de tarefas de cada
 // agente. Assim nada se perde ao reiniciar o servidor.
+//
+// Usa o SQLite que já vem no Node (node:sqlite): nada para compilar,
+// funciona igual no "npm start" e no aplicativo de desktop.
 // =============================================================
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -116,9 +119,9 @@ export const agora = () => new Date().toISOString();
 
 export function abrirBanco(caminho) {
   if (caminho !== ':memory:') fs.mkdirSync(path.dirname(caminho), { recursive: true });
-  db = new Database(caminho);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  db = new DatabaseSync(caminho);
+  db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA foreign_keys = ON');
   db.exec(ESQUEMA);
   // Migrações simples: colunas novas em bancos criados por versões antigas
   const colunas = db.prepare('PRAGMA table_info(negocios)').all().map((c) => c.name);
@@ -131,7 +134,23 @@ export function abrirBanco(caminho) {
 export const banco = () => db;
 
 /** Executa uma função dentro de uma transação (tudo ou nada) */
-export const transacao = (fn) => db.transaction(fn)();
+let profundidade = 0;
+export function transacao(fn) {
+  // Transação aninhada: já estamos dentro de uma, só executa
+  if (profundidade > 0) return fn();
+  profundidade++;
+  db.exec('BEGIN');
+  try {
+    const r = fn();
+    db.exec('COMMIT');
+    return r;
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  } finally {
+    profundidade--;
+  }
+}
 
 // ---------------------------------------------------------------
 // Configurações persistidas (ex.: velocidade)
@@ -164,7 +183,12 @@ export function criarNegocio(n) {
   const r = db.prepare(`INSERT INTO negocios
       (pedido_id, nome, tipo, cidade, instagram, whatsapp, observacoes, analise, status, etapa, criado_em, atualizado_em)
       VALUES (@pedido_id, @nome, @tipo, @cidade, @instagram, @whatsapp, @observacoes, @analise, 'em_andamento', @etapa, @t, @t)`)
-    .run({ pedido_id: null, instagram: null, whatsapp: null, observacoes: null, analise: null, etapa: 'prospeccao', ...n, t });
+    .run({
+      // Só os campos da tabela (o node:sqlite recusa parâmetros extras e "undefined")
+      pedido_id: n.pedido_id ?? null, nome: n.nome, tipo: n.tipo ?? null, cidade: n.cidade ?? null,
+      instagram: n.instagram ?? null, whatsapp: n.whatsapp ?? null, observacoes: n.observacoes ?? null,
+      analise: n.analise ?? null, etapa: n.etapa ?? 'prospeccao', t,
+    });
   return obterNegocio(r.lastInsertRowid);
 }
 export const obterNegocio = (id) => db.prepare('SELECT * FROM negocios WHERE id = ?').get(id);
