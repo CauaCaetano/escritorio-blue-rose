@@ -1,16 +1,20 @@
 {
   "name": "escritorio-blue-rose",
-  "version": "0.1.0",
+  "productName": "Escritório BLUE ROSE",
+  "version": "0.2.0",
   "description": "Escritório virtual em pixel art onde agentes de IA da BLUE ROSE prospectam clientes, escrevem propostas e montam prévias de páginas.",
+  "author": "Cauã Caetano — BLUE ROSE",
   "type": "module",
-  "main": "server/index.js",
+  "main": "electron/main.js",
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "app": "electron .",
+    "dist": "electron-builder --win"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "keywords": [
     "pixel-art",
@@ -23,12 +27,54 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
-    "better-sqlite3": "^13.0.3",
+    "@supabase/supabase-js": "^2.117.2",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
+    "three": "^0.186.1",
     "ws": "^8.22.0"
   },
   "allowScripts": {
-    "better-sqlite3@13.0.3": true
+    "electron@44.5.1": true
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.bluerose.escritorio",
+    "productName": "Escritório BLUE ROSE",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**",
+      "server/**",
+      "shared/**",
+      "public/**",
+      "build/icon.png",
+      ".env.example",
+      "package.json",
+      "!**/.env",
+      "!data/**",
+      "!previas/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Escritório BLUE ROSE",
+      "artifactName": "Escritorio-BLUE-ROSE-Instalador-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Escritorio-BLUE-ROSE-${version}-portatil.${ext}"
+    }
   }
 }

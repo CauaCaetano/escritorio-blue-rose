@@ -28,6 +28,9 @@ export const config = {
   esforcoIA: ['low', 'medium', 'high', 'xhigh', 'max'].includes(process.env.ESFORCO_IA) ? process.env.ESFORCO_IA : 'medium',
   // Site da BLUE ROSE (vai nas propostas e mensagens)
   siteUrl: (process.env.SITE_URL || 'https://cauacaetano.github.io/blue-rose-automacao-express/').trim(),
+  // Supabase (opcional): espelho dos dados na nuvem. Chave service_role só no servidor.
+  supabaseUrl: (process.env.SUPABASE_URL || '').trim(),
+  supabaseChave: (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
   // Pasta onde o Dev salva as prévias em HTML
   pastaPrevias: path.resolve(RAIZ, process.env.PASTA_PREVIAS || './previas'),
 };

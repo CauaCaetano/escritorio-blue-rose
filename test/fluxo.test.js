@@ -75,5 +75,14 @@ test('negócio cadastrado é analisado; sem chave, o erro vai para o log e o flu
   const logs = db.historicoDoNegocio(n.id);
   assert.ok(logs.some((l) => l.tipo === 'erro' && /Sem chave/.test(l.texto)), 'erro de IA registrado no log');
   assert.equal(db.ultimaProposta(n.id).origem, 'simulado');
+
+  // Marketing e tecnologia entregaram suas partes
+  const artefatos = db.artefatosDoNegocio(n.id);
+  for (const tipo of ['identidade', 'conteudo', 'anuncio', 'seo', 'automacao']) assert.ok(artefatos[tipo], `falta ${tipo}`);
+  assert.ok(db.ultimaPrevia(n.id).html.includes(artefatos.seo.conteudo.titulo.replace(/&/g, '&amp;')), 'prévia usa o título do SEO');
+  // Passou por todos os departamentos (cada agente aparece no histórico)
+  const quem = new Set(db.historicoDoNegocio(n.id).map((l) => l.agente).filter(Boolean));
+  for (const id of ['gerente', 'headVendas', 'prospector', 'headMarketing', 'designer', 'conteudo', 'anuncios',
+    'redator', 'cto', 'seo', 'dev', 'automacao', 'revisor', 'atendente']) assert.ok(quem.has(id), `${id} não trabalhou`);
   esc.encerrar();
 });

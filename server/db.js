@@ -4,8 +4,11 @@
 // Guarda negócios, propostas, prévias, revisões, respostas do
 // Atendente, decisões, histórico e a FILA de tarefas de cada
 // agente. Assim nada se perde ao reiniciar o servidor.
+//
+// Usa o SQLite que já vem no Node (node:sqlite): nada para compilar,
+// funciona igual no "npm start" e no aplicativo de desktop.
 // =============================================================
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -103,6 +106,20 @@ CREATE TABLE IF NOT EXISTS tarefas (
   concluida_em TEXT
 );
 
+-- Entregas dos especialistas de marketing e tecnologia
+-- tipo: identidade | conteudo | anuncio | seo | automacao
+CREATE TABLE IF NOT EXISTS artefatos (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  negocio_id  INTEGER NOT NULL REFERENCES negocios(id),
+  tipo        TEXT NOT NULL,
+  versao      INTEGER NOT NULL,
+  conteudo    TEXT NOT NULL,           -- JSON
+  agente      TEXT,
+  origem      TEXT NOT NULL DEFAULT 'simulado',
+  criado_em   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_artefatos ON artefatos(negocio_id, tipo, versao);
+
 CREATE INDEX IF NOT EXISTS idx_tarefas_fila ON tarefas(agente, status, prioridade, id);
 CREATE INDEX IF NOT EXISTS idx_historico_id ON historico(id);
 
@@ -116,13 +133,15 @@ export const agora = () => new Date().toISOString();
 
 export function abrirBanco(caminho) {
   if (caminho !== ':memory:') fs.mkdirSync(path.dirname(caminho), { recursive: true });
-  db = new Database(caminho);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  db = new DatabaseSync(caminho);
+  db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA foreign_keys = ON');
   db.exec(ESQUEMA);
   // Migrações simples: colunas novas em bancos criados por versões antigas
   const colunas = db.prepare('PRAGMA table_info(negocios)').all().map((c) => c.name);
   if (!colunas.includes('whatsapp')) db.exec('ALTER TABLE negocios ADD COLUMN whatsapp TEXT');
+  // De onde veio o negócio: cadastro (você), demo (fictício) ou piloto (achado na web)
+  if (!colunas.includes('fonte')) db.exec("ALTER TABLE negocios ADD COLUMN fonte TEXT DEFAULT 'cadastro'");
   // Tarefas que estavam "em andamento" quando o servidor caiu voltam para a fila
   db.prepare(`UPDATE tarefas SET status = 'pendente' WHERE status = 'andamento'`).run();
   return db;
@@ -131,7 +150,23 @@ export function abrirBanco(caminho) {
 export const banco = () => db;
 
 /** Executa uma função dentro de uma transação (tudo ou nada) */
-export const transacao = (fn) => db.transaction(fn)();
+let profundidade = 0;
+export function transacao(fn) {
+  // Transação aninhada: já estamos dentro de uma, só executa
+  if (profundidade > 0) return fn();
+  profundidade++;
+  db.exec('BEGIN');
+  try {
+    const r = fn();
+    db.exec('COMMIT');
+    return r;
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  } finally {
+    profundidade--;
+  }
+}
 
 // ---------------------------------------------------------------
 // Configurações persistidas (ex.: velocidade)
@@ -162,9 +197,14 @@ export const marcarPedido = (id, status) => db.prepare('UPDATE pedidos SET statu
 export function criarNegocio(n) {
   const t = agora();
   const r = db.prepare(`INSERT INTO negocios
-      (pedido_id, nome, tipo, cidade, instagram, whatsapp, observacoes, analise, status, etapa, criado_em, atualizado_em)
-      VALUES (@pedido_id, @nome, @tipo, @cidade, @instagram, @whatsapp, @observacoes, @analise, 'em_andamento', @etapa, @t, @t)`)
-    .run({ pedido_id: null, instagram: null, whatsapp: null, observacoes: null, analise: null, etapa: 'prospeccao', ...n, t });
+      (pedido_id, nome, tipo, cidade, instagram, whatsapp, observacoes, analise, fonte, status, etapa, criado_em, atualizado_em)
+      VALUES (@pedido_id, @nome, @tipo, @cidade, @instagram, @whatsapp, @observacoes, @analise, @fonte, 'em_andamento', @etapa, @t, @t)`)
+    .run({
+      // Só os campos da tabela (o node:sqlite recusa parâmetros extras e "undefined")
+      pedido_id: n.pedido_id ?? null, nome: n.nome, tipo: n.tipo ?? null, cidade: n.cidade ?? null,
+      instagram: n.instagram ?? null, whatsapp: n.whatsapp ?? null, observacoes: n.observacoes ?? null,
+      analise: n.analise ?? null, etapa: n.etapa ?? 'prospeccao', fonte: n.fonte ?? (n.pedido_id ? 'demo' : 'cadastro'), t,
+    });
   return obterNegocio(r.lastInsertRowid);
 }
 export const obterNegocio = (id) => db.prepare('SELECT * FROM negocios WHERE id = ?').get(id);
@@ -183,6 +223,22 @@ export const negociosDoPedido = (pedidoId) =>
 
 export const listarNegocios = () =>
   db.prepare('SELECT * FROM negocios ORDER BY atualizado_em DESC, id DESC').all();
+
+/** Quantos negócios o piloto automático já criou desde `desdeIso` */
+export const contarPiloto = (desdeIso) =>
+  db.prepare(`SELECT COUNT(*) AS n FROM negocios WHERE fonte = 'piloto' AND criado_em >= ?`).get(desdeIso).n;
+
+/** Nomes já conhecidos (para não prospectar o mesmo negócio duas vezes) */
+export const nomesDeNegocios = () => db.prepare('SELECT nome FROM negocios').all().map((r) => r.nome);
+
+/** Tarefas ainda abertas de certos tipos (ex.: busca do piloto em andamento) */
+// Conta também as entregas a caminho que levam uma dessas tarefas (o agente
+// ainda está andando até o colega), senão a fila parece vazia nesse intervalo.
+export const tarefasAbertas = (tipos) =>
+  db.prepare(`SELECT COUNT(*) AS n FROM tarefas WHERE status IN ('pendente','andamento')
+              AND (tipo IN (${tipos.map(() => '?').join(',')})
+                   OR (tipo = 'entregar' AND (${tipos.map(() => 'dados LIKE ?').join(' OR ')})))`)
+    .get(...tipos, ...tipos.map((t) => `%"tipo":"${t}"%`)).n;
 
 export const negociosAguardando = () =>
   db.prepare(`SELECT * FROM negocios WHERE status = 'aguardando_aprovacao' ORDER BY atualizado_em`).all();
@@ -230,6 +286,26 @@ export function salvarRespostas(negocioId, lista, origem = 'simulado') {
 export function ultimasRespostas(negocioId) {
   const r = db.prepare('SELECT * FROM respostas WHERE negocio_id = ? ORDER BY id DESC LIMIT 1').get(negocioId);
   return r ? { ...r, conteudo: JSON.parse(r.conteudo) } : null;
+}
+
+export function salvarArtefato(negocioId, tipo, conteudo, { agente = null, origem = 'simulado' } = {}) {
+  const versao = db.prepare('SELECT COALESCE(MAX(versao), 0) + 1 AS v FROM artefatos WHERE negocio_id = ? AND tipo = ?')
+    .get(negocioId, tipo).v;
+  db.prepare(`INSERT INTO artefatos (negocio_id, tipo, versao, conteudo, agente, origem, criado_em)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`).run(negocioId, tipo, versao, JSON.stringify(conteudo), agente, origem, agora());
+  return ultimoArtefato(negocioId, tipo);
+}
+export function ultimoArtefato(negocioId, tipo) {
+  const r = db.prepare('SELECT * FROM artefatos WHERE negocio_id = ? AND tipo = ? ORDER BY versao DESC LIMIT 1').get(negocioId, tipo);
+  return r ? { ...r, conteudo: JSON.parse(r.conteudo) } : null;
+}
+/** Última versão de cada tipo: { identidade: {...}, seo: {...}, ... } */
+export function artefatosDoNegocio(negocioId) {
+  const linhas = db.prepare(`SELECT a.* FROM artefatos a
+      JOIN (SELECT tipo, MAX(versao) v FROM artefatos WHERE negocio_id = ? GROUP BY tipo) u
+        ON a.tipo = u.tipo AND a.versao = u.v
+      WHERE a.negocio_id = ?`).all(negocioId, negocioId);
+  return Object.fromEntries(linhas.map((r) => [r.tipo, { ...r, conteudo: JSON.parse(r.conteudo) }]));
 }
 
 export function salvarDecisao(negocioId, decisao, comentario = null) {

@@ -11,6 +11,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/estilo.css">
+  <!-- Three.js servido localmente pelo próprio servidor (funciona sem internet) -->
+  <script type="importmap">
+    { "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three-addons/" } }
+  </script>
   <script>
     // Aplica o tema salvo antes de desenhar a página (evita "piscar")
     // Também aceita ?tema=claro ou ?tema=escuro na URL (útil para prints)
@@ -33,6 +37,11 @@
 
     <div class="controles">
       <span id="selo-ia" class="selo-ia" title="Situação da IA real">IA: verificando…</span>
+      <span id="selo-supabase" class="selo-ia" hidden>☁ Supabase</span>
+      <div class="grupo-velocidade grupo-visao" role="group" aria-label="Visão do escritório">
+        <button type="button" data-visao="3d" aria-pressed="true">3D</button>
+        <button type="button" data-visao="2d" aria-pressed="false">2D</button>
+      </div>
       <div class="grupo-velocidade" role="group" aria-label="Velocidade da simulação">
         <button type="button" data-vel="1" aria-pressed="true">1x</button>
         <button type="button" data-vel="2" aria-pressed="false">2x</button>
@@ -52,10 +61,12 @@
     <section class="palco" aria-label="Escritório">
       <div class="contadores" id="contadores"></div>
       <div class="moldura" id="moldura">
-        <canvas id="cena" aria-label="Mapa do escritório com os agentes trabalhando"></canvas>
+        <canvas id="cena" aria-label="Mapa do escritório com os agentes trabalhando" hidden></canvas>
+        <div id="cena3d" class="cena3d" aria-label="Escritório em 3D com os agentes trabalhando"></div>
+        <button type="button" id="botao-centralizar" class="botao-flutuante" title="Voltar a câmera para o centro">⟲ Centralizar</button>
         <div id="cartao-agente" class="cartao-agente" hidden></div>
       </div>
-      <p class="dica">Clique em um personagem para ver o papel e o que ele está fazendo.</p>
+      <p class="dica">Clique em um personagem para ver o cargo e o que ele está fazendo. No 3D: arraste para girar, use a roda do mouse para aproximar e o botão direito para mover.</p>
     </section>
 
     <!-- Painel lateral -->

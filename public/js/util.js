@@ -86,7 +86,9 @@ export const ROTULO_STATUS = {
 };
 
 export const ROTULO_ETAPA = {
-  prospeccao: 'Prospecção', redacao: 'Redação', previa: 'Prévia', revisao: 'Revisão',
+  prospeccao: 'Prospecção', marketing: 'Marketing', identidade: 'Identidade visual', conteudo: 'Conteúdo',
+  anuncio: 'Anúncio', tecnologia: 'Tecnologia', seo: 'SEO', automacao: 'Automação',
+  redacao: 'Redação', previa: 'Prévia', revisao: 'Revisão',
   atendimento: 'Atendimento', consolidacao: 'Com o Gerente', aprovacao: 'Sua aprovação',
   aprovado: 'Aprovado', ajuste: 'Ajuste pedido',
 };

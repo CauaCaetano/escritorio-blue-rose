@@ -26,8 +26,62 @@ const temaAtual = () => document.documentElement.dataset.theme || (midiaEscura.m
 const cartao = document.getElementById('cartao-agente');
 let agenteSelecionado = null;
 
-const cena = new Cena(document.getElementById('cena'), { aoClicarAgente: selecionarAgente });
-cena.definirTema(temaAtual() === 'dark' ? 'escuro' : 'claro');
+// Duas visões do mesmo escritório: 2D (pixel art) e 3D (Three.js).
+// Ambas recebem os eventos; só a ativa é desenhada.
+const cena2d = new Cena(document.getElementById('cena'), { aoClicarAgente: selecionarAgente });
+let cena3d = null;
+const visoes = () => [cena2d, cena3d].filter(Boolean);
+let ativa = cena2d;
+
+const cena = {
+  atualizarAgente: (a) => visoes().forEach((v) => v.atualizarAgente(a)),
+  selecionar: (id) => visoes().forEach((v) => v.selecionar(id)),
+  definirTema: (t) => visoes().forEach((v) => v.definirTema(t)),
+  definirVelocidade: (vel) => visoes().forEach((v) => v.definirVelocidade(vel)),
+  posicaoNaTela: (id) => ativa.posicaoNaTela(id),
+  get elemento() { return ativa.elemento; },
+};
+const temaCena = () => (temaAtual() === 'dark' ? 'escuro' : 'claro');
+cena.definirTema(temaCena());
+
+function escolherVisao(nome) {
+  const quer3d = nome === '3d' && cena3d;
+  ativa = quer3d ? cena3d : cena2d;
+  cena2d.ativar(!quer3d);
+  cena3d?.ativar(Boolean(quer3d));
+  document.getElementById('botao-centralizar').hidden = !quer3d;
+  for (const b of document.querySelectorAll('[data-visao]')) b.setAttribute('aria-pressed', String(b.dataset.visao === (quer3d ? '3d' : '2d')));
+  try { localStorage.setItem('br-visao', quer3d ? '3d' : '2d'); } catch (e) { /* sem armazenamento */ }
+}
+
+let visaoPreferida = '3d';
+try { visaoPreferida = localStorage.getItem('br-visao') || '3d'; } catch (e) { /* padrão: 3D */ }
+// ?visao=2d ou ?visao=3d na URL tem prioridade (útil para prints)
+const visaoNaUrl = new URLSearchParams(location.search).get('visao');
+if (visaoNaUrl === '2d' || visaoNaUrl === '3d') visaoPreferida = visaoNaUrl;
+escolherVisao('2d');
+
+// O 3D é carregado à parte: se o computador não tiver WebGL, o 2D continua funcionando
+import('./cena3d.js').then(({ Cena3D }) => {
+  cena3d = new Cena3D(document.getElementById('cena3d'), { aoClicarAgente: selecionarAgente });
+  cena3d.definirTema(temaCena());
+  cena3d.definirVelocidade(estado.velocidade);
+  for (const a of estado.agentes.values()) cena3d.atualizarAgente(a);
+  if (agenteSelecionado) cena3d.selecionar(agenteSelecionado);
+  escolherVisao(visaoPreferida);
+}).catch((e) => {
+  console.warn('Visão 3D indisponível; usando 2D.', e);
+  document.querySelector('[data-visao="3d"]').disabled = true;
+  document.getElementById('cena3d').hidden = true;
+  escolherVisao('2d');
+});
+
+document.querySelector('.grupo-visao').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-visao]');
+  if (b && !b.disabled) escolherVisao(b.dataset.visao);
+});
+document.getElementById('botao-centralizar').addEventListener('click', () => cena3d?.centralizar());
+
 const painel = new Painel(estado, { aoSelecionarAgente: selecionarAgente });
 
 function selecionarAgente(id) {
@@ -50,9 +104,10 @@ function posicionarCartao() {
   if (cartao.hidden || !agenteSelecionado) return;
   const p = cena.posicaoNaTela(agenteSelecionado);
   if (!p) return;
-  const canvas = document.getElementById('cena');
+  const alvo = cena.elemento;
   const moldura = document.getElementById('moldura');
-  const offX = canvas.offsetLeft, offY = canvas.offsetTop;
+  const offX = alvo.offsetLeft + (alvo.offsetParent !== moldura ? alvo.offsetParent?.offsetLeft || 0 : 0);
+  const offY = alvo.offsetTop + (alvo.offsetParent !== moldura ? alvo.offsetParent?.offsetTop || 0 : 0);
   const w = cartao.offsetWidth, h = cartao.offsetHeight;
   let x = offX + p.x - w / 2;
   x = Math.max(8, Math.min(moldura.clientWidth - w - 8, x));
@@ -77,8 +132,17 @@ function marcarIA(ia) {
     : 'Sem chave da API: os agentes usam textos simulados. Veja o README para ligar a IA real.';
 }
 
+function marcarSupabase(s) {
+  const selo = document.getElementById('selo-supabase');
+  selo.hidden = !s?.ativo;
+  selo.classList.toggle('ativa', Boolean(s?.ativo && !s.erro));
+  selo.textContent = s?.erro ? '☁ Supabase com erro' : '☁ Supabase';
+  selo.title = s?.erro ? `Erro ao sincronizar: ${s.erro}` : 'Dados espelhados na nuvem (Supabase).';
+}
+
 function aplicarRetrato(r) {
   marcarIA(r.ia);
+  marcarSupabase(r.supabase);
   estado.velocidade = r.velocidade;
   estado.contadores = r.contadores;
   estado.log = r.log;
@@ -220,6 +284,6 @@ document.getElementById('form-pedido').addEventListener('submit', async (e) => {
 // Clicar fora do mapa fecha o cartão do agente
 document.addEventListener('click', (e) => {
   if (!agenteSelecionado) return;
-  if (e.target.closest('#cena, #cartao-agente, .lista-time')) return;
+  if (e.target.closest('#cena, #cena3d, #cartao-agente, .lista-time')) return;
   selecionarAgente(null);
 });

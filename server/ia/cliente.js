@@ -74,18 +74,57 @@ export async function pedirJSON({ sistema, mensagem, schema, maxTokens = 16000 }
     throw new ErroIA(descreverErro(e));
   }
 
+  return interpretar(resposta);
+}
+
+/** Lê o JSON da resposta (aceita também JSON dentro de ```bloco```) */
+function interpretar(resposta) {
   if (resposta.stop_reason === 'refusal') throw new ErroIA('O modelo recusou o pedido');
   if (resposta.stop_reason === 'max_tokens') throw new ErroIA('Resposta cortada (limite de tokens)');
-  const texto = resposta.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
-  let dados;
-  try {
-    dados = JSON.parse(texto);
-  } catch {
-    throw new ErroIA('A IA respondeu em um formato inesperado');
+  // Com busca na web a resposta pode ter vários blocos de texto; o JSON é o último
+  const textos = resposta.content.filter((b) => b.type === 'text').map((b) => b.text);
+  const candidatos = [textos.join(''), textos[textos.length - 1] || ''];
+  for (const c of candidatos) {
+    const limpo = c.replace(/^[\s\S]*?```(?:json)?\s*([\s\S]*?)```[\s\S]*$/, '$1').trim();
+    for (const tentativa of [c.trim(), limpo, limpo.slice(limpo.indexOf('{'), limpo.lastIndexOf('}') + 1)]) {
+      try {
+        return {
+          dados: JSON.parse(tentativa),
+          modelo: resposta.model,
+          uso: { entrada: resposta.usage.input_tokens, saida: resposta.usage.output_tokens },
+        };
+      } catch { /* tenta o próximo formato */ }
+    }
   }
-  return {
-    dados,
-    modelo: resposta.model,
-    uso: { entrada: resposta.usage.input_tokens, saida: resposta.usage.output_tokens },
+  throw new ErroIA('A IA respondeu em um formato inesperado');
+}
+
+/**
+ * Como pedirJSON, mas o modelo pode pesquisar na web (busca da própria Anthropic).
+ * Usado pela prospecção automática para achar negócios REAIS e públicos.
+ * Trata "pause_turn" (busca longa que precisa ser retomada).
+ */
+export async function pedirJSONComBusca({ sistema, mensagem, schema, maxBuscas = 6, maxTokens = 16000 }) {
+  const c = obterCliente();
+  const base = {
+    model: config.modeloIA,
+    max_tokens: maxTokens,
+    system: sistema,
+    tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: maxBuscas, user_location: { type: 'approximate', country: 'BR' } }],
+    output_config: { format: { type: 'json_schema', schema }, ...(config.modeloIA.includes('haiku') ? {} : { effort: config.esforcoIA }) },
   };
+  const mensagens = [{ role: 'user', content: mensagem }];
+  let resposta;
+  try {
+    for (let rodada = 0; rodada < 5; rodada++) {
+      resposta = await c.messages.stream({ ...base, messages: mensagens }).finalMessage();
+      if (resposta.stop_reason !== 'pause_turn') break;
+      // Busca longa: devolve o que já foi feito e pede para continuar
+      mensagens.push({ role: 'assistant', content: resposta.content });
+    }
+  } catch (e) {
+    throw new ErroIA(descreverErro(e));
+  }
+  if (resposta.stop_reason === 'pause_turn') throw new ErroIA('A busca demorou demais e foi interrompida');
+  return interpretar(resposta);
 }

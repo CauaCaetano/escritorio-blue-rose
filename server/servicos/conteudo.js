@@ -7,8 +7,15 @@
 // Toda função retorna também "origem" ('api' ou 'simulado').
 // =============================================================
 import * as sim from '../simulado/gerador.js';
-import { pedirJSON, iaAtiva } from '../ia/cliente.js';
+import { pedirJSON, pedirJSONComBusca, iaAtiva } from '../ia/cliente.js';
 import * as P from '../ia/prompts.js';
+import { linksParaNegocio } from '../site.js';
+
+/** Links do site com a marca de origem deste agente e deste negócio */
+const blocoLinks = (negocio, agente) => {
+  const l = linksParaNegocio(negocio, agente);
+  return `\n\nLinks do site da BLUE ROSE para usar com este cliente:\n- Site de exemplo do nicho: ${l.exemplo}\n- Página inicial: ${l.site}\n- Projetos: ${l.projetos}`;
+};
 
 /** Tenta a IA; em caso de erro devolve o resultado simulado */
 async function comPlanoB(chamarIA, simulado) {
@@ -33,6 +40,28 @@ export async function prospectar(pedido) {
   return { negocios: sim.inventarNegocios(pedido.texto, pedido.quantidade), origem: 'simulado' };
 }
 
+/**
+ * Piloto automático: acha negócios REAIS na web (sem raspagem: busca da Anthropic).
+ * Não existe modo simulado aqui de propósito: inventar empresas "reais" seria enganoso.
+ */
+export async function prospectarReal({ cidade, nicho, quantidade, jaProspectados = [] }) {
+  if (!iaAtiva()) return { negocios: [], origem: 'simulado', erroIA: 'A busca automática precisa da IA real (chave da API)' };
+  try {
+    const r = await pedirJSONComBusca({
+      sistema: P.PROSPECCAO.sistema,
+      schema: P.PROSPECCAO.schema,
+      maxBuscas: 5,
+      mensagem: `Encontre ${quantidade} negócios do nicho "${nicho}" em ${cidade}.\n`
+        + `Já prospectados (não repita): ${jaProspectados.slice(-80).join('; ') || '(nenhum)'}`,
+    });
+    // Só aceita resultados com fonte (link real) e nome
+    const negocios = (r.dados.negocios || []).filter((n) => n.nome?.trim() && /^https?:\/\//.test(n.fonte || ''));
+    return { negocios, origem: 'api', uso: r.uso, modelo: r.modelo };
+  } catch (e) {
+    return { negocios: [], origem: 'simulado', erroIA: e.message };
+  }
+}
+
 export function analisarNegocio(negocio) {
   return comPlanoB(
     () => chamar(P.PROSPECTOR, `Analise este negócio local:\n${P.fichaNegocio(negocio)}`, 4000),
@@ -43,6 +72,7 @@ export function analisarNegocio(negocio) {
 export function redigirProposta(negocio, comentario) {
   const mensagem = [
     `Escreva a proposta e a mensagem de primeiro contato para:\n${P.fichaNegocio(negocio)}`,
+    blocoLinks(negocio, 'redator'),
     comentario ? `\nPEDIDO DE AJUSTE DO CAUÃ (prioridade): ${comentario}` : '',
   ].join('');
   return comPlanoB(
@@ -51,16 +81,32 @@ export function redigirProposta(negocio, comentario) {
   );
 }
 
-export function gerarPrevia(negocio, { correcao, proposta, previaAnterior } = {}) {
+// ---------------------------------------------------------------
+// Marketing e tecnologia
+// ---------------------------------------------------------------
+const pedirSobre = (agente, pedido, negocio, simulado, maxTokens = 4000) => comPlanoB(
+  () => chamar(agente, `${pedido}\n${P.fichaNegocio(negocio)}`, maxTokens),
+  () => simulado(negocio),
+);
+
+export const identidadeVisual = (n) => pedirSobre(P.DESIGNER, 'Crie a identidade visual da prévia para:', n, sim.identidadeVisual);
+export const conteudoSocial = (n) => pedirSobre(P.CONTEUDO, 'Crie a bio e as ideias de posts para:', n, sim.conteudoSocial);
+export const anuncioLocal = (n) => pedirSobre(P.ANUNCIOS, 'Crie o anúncio local para:', n, sim.anuncioLocal);
+export const planoSeo = (n) => pedirSobre(P.SEO, 'Defina o SEO da página de:', n, sim.planoSeo);
+export const roteiroAutomacao = (n) => pedirSobre(P.AUTOMACAO, 'Monte o roteiro do robô de WhatsApp de:', n, sim.roteiroAutomacao);
+
+export function gerarPrevia(negocio, { correcao, proposta, previaAnterior, identidade, seo } = {}) {
   const mensagem = [
     `Crie a prévia da página para:\n${P.fichaNegocio(negocio)}`,
+    identidade ? `\n\nIDENTIDADE VISUAL (da designer Nina):\n${JSON.stringify(identidade)}` : '',
+    seo ? `\n\nSEO (da Rita): título "${seo.titulo}" · descrição "${seo.descricao}"` : '',
     proposta ? `\n\nProposta aprovada pelo time (use como base do conteúdo):\n${proposta.proposta}` : '',
     correcao ? `\n\nCORREÇÃO PEDIDA: ${correcao}` : '',
     correcao && previaAnterior ? `\n\nHTML anterior (corrija a partir dele):\n${previaAnterior.html}` : '',
   ].join('');
   return comPlanoB(
     () => chamar(P.DEV, mensagem, 24000),
-    () => ({ html: sim.gerarPreviaHtml(negocio, { correcao }), resumo: correcao ? 'Correção aplicada.' : 'Prévia criada.' }),
+    () => ({ html: sim.gerarPreviaHtml(negocio, { correcao, identidade, seo }), resumo: correcao ? 'Correção aplicada.' : 'Prévia criada.' }),
   );
 }
 
@@ -98,7 +144,7 @@ export function revisarPrevia(negocio, previa, proposta, { podeReprovar }) {
 
 export function prepararRespostas(negocio) {
   return comPlanoB(
-    () => chamar(P.ATENDENTE, `Prepare as respostas prontas para as dúvidas deste cliente:\n${P.fichaNegocio(negocio)}`, 4000,
+    () => chamar(P.ATENDENTE, `Prepare as respostas prontas para as dúvidas deste cliente:\n${P.fichaNegocio(negocio)}${blocoLinks(negocio, 'atendente')}`, 4000,
       (d) => ({ lista: d.respostas })),
     () => ({ lista: sim.respostasFrequentes(negocio) }),
   );

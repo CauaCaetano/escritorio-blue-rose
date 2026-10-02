@@ -18,6 +18,9 @@ import { criarFluxo } from './agentes/fluxo.js';
 import { iaAtiva } from './ia/cliente.js';
 import { config } from './config.js';
 import { linksWhatsapp } from './whatsapp.js';
+import { agendarSincronizacao, estadoSupabase } from './supabase.js';
+import { Piloto } from './piloto.js';
+import { LeadsSite } from './leadsSite.js';
 
 export class Escritorio {
   constructor({ velocidade = 1 } = {}) {
@@ -26,6 +29,8 @@ export class Escritorio {
     this.ouvintes = new Set();
     this.encerrando = false;
     this.fluxo = criarFluxo(this);
+    this.piloto = new Piloto(this);
+    this.leadsSite = new LeadsSite(this);
     this.agentes = new Map(
       TIME.map((def) => [def.id, def.id === 'gerente' ? new Gerente(this, def) : new Agente(this, def)]),
     );
@@ -33,10 +38,14 @@ export class Escritorio {
 
   iniciar() {
     for (const a of this.agentes.values()) a.iniciar();
+    this.piloto.iniciar();
+    this.leadsSite.iniciar();
   }
 
   encerrar() {
     this.encerrando = true;
+    this.piloto.parar();
+    this.leadsSite.parar();
     this.relogio.parar();
   }
 
@@ -64,6 +73,7 @@ export class Escritorio {
   }
 
   emitirNegocio(id) {
+    agendarSincronizacao(id, (texto) => this.log({ tipo: 'erro', texto }));
     this.emitir('negocio', resumoNegocio(db.obterNegocio(id)));
     this.emitir('contadores', db.contadores());
     this.agentes.get('gerente').atualizarAlerta();
@@ -84,6 +94,8 @@ export class Escritorio {
     return {
       velocidade: this.relogio.velocidade,
       ia: { ativa: iaAtiva(), modelo: config.modeloIA },
+      supabase: estadoSupabase(),
+      piloto: this.piloto.status(),
       agentes: this.listaAgentes().map((a) => a.publico()),
       aguardando: db.negociosAguardando().map(resumoNegocio),
       negocios: db.listarNegocios().slice(0, 50).map(resumoNegocio),
@@ -109,6 +121,17 @@ export class Escritorio {
     const n = db.criarNegocio({ ...dados, etapa: 'prospeccao' });
     db.inserirTarefa({ agente: 'gerente', tipo: 'negocio', negocioId: n.id });
     this.log({ negocioId: n.id, tipo: 'decisao', texto: `Você cadastrou ${n.nome} para análise.` });
+    this.emitirNegocio(n.id);
+    this.acordar('gerente');
+    this.emitirAgente('gerente');
+    return n;
+  }
+
+  /** Pedido feito por um cliente no formulário do site: entra no fluxo como negócio real */
+  receberLeadSite(dados) {
+    const n = db.criarNegocio({ ...dados, etapa: 'prospeccao' });
+    db.inserirTarefa({ agente: 'gerente', tipo: 'negocio', negocioId: n.id, prioridade: 3 });
+    this.log({ negocioId: n.id, tipo: 'decisao', texto: `Novo contato pelo site: ${n.nome}. O time vai preparar a resposta para você aprovar.` });
     this.emitirNegocio(n.id);
     this.acordar('gerente');
     this.emitirAgente('gerente');
@@ -179,7 +202,7 @@ export function resumoNegocio(n) {
   const previa = db.ultimaPrevia(n.id);
   return {
     id: n.id, nome: n.nome, tipo: n.tipo, cidade: n.cidade, instagram: n.instagram, whatsapp: n.whatsapp,
-    status: n.status, etapa: n.etapa, motivo: n.motivo, atualizado_em: n.atualizado_em,
+    fonte: n.fonte, status: n.status, etapa: n.etapa, motivo: n.motivo, atualizado_em: n.atualizado_em,
     mensagem: proposta?.mensagem || null,
     versaoProposta: proposta?.versao || 0,
     versaoPrevia: previa?.versao || 0,

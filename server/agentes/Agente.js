@@ -24,6 +24,8 @@ export class Agente {
     this.nome = def.nome;
     this.cargo = def.cargo;
     this.especialidade = def.especialidade;
+    this.departamento = def.departamento;
+    this.chefe = Boolean(def.chefe);
     this.papel = def.papel;
     this.visual = def.visual;
     this.mesa = MESAS[def.id];
@@ -53,7 +55,7 @@ export class Agente {
     }
     return {
       id: this.id, nome: this.nome, cargo: this.cargo, especialidade: this.especialidade,
-      papel: this.papel, visual: this.visual,
+      departamento: this.departamento, chefe: this.chefe, papel: this.papel, visual: this.visual,
       x: this.x, y: this.y, dir: this.dir, sentado: this.sentado,
       estado: this.estado, balao: this.balao, status: this.status,
       fila: db.tamanhoFila(this.id), movimento,
