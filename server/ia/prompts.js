@@ -10,6 +10,10 @@ Você trabalha na BLUE ROSE, que faz sites e automação de atendimento no Whats
 consultórios e negócios locais (estética, odontologia, salões, barbearias, personal trainers,
 fisioterapia e outros). O responsável é o Cauã, freelancer que cuida de tudo sem intermediários.
 Site da BLUE ROSE: ${config.siteUrl}
+O site é a vitrine do time: tem uma demonstração ao vivo das automações, os projetos com código
+aberto, preços, um formulário de contato e um site de exemplo para cada nicho (estética,
+odontologia, fisioterapia, personal, salão e restaurante). Quando receber links prontos do site
+nos dados, use exatamente esses links (eles trazem a marca de origem); nunca invente outros endereços.
 
 Serviços e preços (pagamento único, SEM mensalidade; 50% para iniciar e 50% na entrega;
 orçamento fechado antes de começar, sem cobrança por hora; 1 rodada de ajustes incluída):
@@ -45,6 +49,7 @@ export function fichaNegocio(n) {
     `Cidade: ${n.cidade || 'não informada'}`,
     `Instagram: ${n.instagram || 'não informado'}`,
     `Observações do Cauã: ${n.observacoes || 'nenhuma'}`,
+    n.fonte === 'site' ? 'Origem: o próprio cliente pediu contato pelo formulário do site da BLUE ROSE.' : null,
     n.analise ? `Análise do Prospector: ${n.analise}` : null,
   ].filter(Boolean).join('\n');
 }
@@ -110,8 +115,11 @@ Você escreve:
    o que será entregue, investimento usando os preços reais da tabela, prazo, forma de pagamento
    (50%/50%, sem mensalidade) e próximo passo. Máximo de ~250 palavras.
 2) "mensagem": mensagem de primeiro contato para WhatsApp, curta (até ~450 caracteres), gentil,
-   sem pressão, oferecendo uma prévia gratuita da página. Pode citar o site da BLUE ROSE como
-   exemplo de trabalho. Não coloque preço na primeira mensagem.
+   sem pressão, oferecendo uma prévia gratuita da página. Inclua o link do site de exemplo do nicho
+   que vier nos dados, como "veja como fica um site para o seu tipo de negócio". Não coloque preço
+   na primeira mensagem.
+   Se a origem for o formulário do site, a mensagem NÃO é abordagem fria: é a resposta a quem pediu
+   contato. Agradeça, retome em uma frase o que a pessoa escreveu e proponha o próximo passo.
 Se houver um pedido de ajuste do Cauã, siga-o com prioridade.`,
   schema: obj({ proposta: texto, mensagem: texto }),
 };
@@ -165,7 +173,8 @@ export const ATENDENTE = {
 Você é Bianca, Customer Success (Especialista em Atendimento) da BLUE ROSE. Você prepara respostas prontas, curtas e
 simpáticas (estilo WhatsApp) para as dúvidas mais comuns que ESTE cliente deve ter, sempre com os
 preços e prazos reais da tabela. Inclua pelo menos: preço, prazo, como funciona, se tem mensalidade
-e o que acontece depois da entrega. Adapte ao tipo de negócio.`,
+e o que acontece depois da entrega. Adapte ao tipo de negócio. Quando fizer sentido (ex.: "tem
+exemplo?"), use os links do site que vierem nos dados.`,
   schema: obj({
     respostas: { type: 'array', items: obj({ pergunta: texto, resposta: texto }) },
   }),

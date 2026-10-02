@@ -9,6 +9,13 @@
 import * as sim from '../simulado/gerador.js';
 import { pedirJSON, pedirJSONComBusca, iaAtiva } from '../ia/cliente.js';
 import * as P from '../ia/prompts.js';
+import { linksParaNegocio } from '../site.js';
+
+/** Links do site com a marca de origem deste agente e deste negócio */
+const blocoLinks = (negocio, agente) => {
+  const l = linksParaNegocio(negocio, agente);
+  return `\n\nLinks do site da BLUE ROSE para usar com este cliente:\n- Site de exemplo do nicho: ${l.exemplo}\n- Página inicial: ${l.site}\n- Projetos: ${l.projetos}`;
+};
 
 /** Tenta a IA; em caso de erro devolve o resultado simulado */
 async function comPlanoB(chamarIA, simulado) {
@@ -65,6 +72,7 @@ export function analisarNegocio(negocio) {
 export function redigirProposta(negocio, comentario) {
   const mensagem = [
     `Escreva a proposta e a mensagem de primeiro contato para:\n${P.fichaNegocio(negocio)}`,
+    blocoLinks(negocio, 'redator'),
     comentario ? `\nPEDIDO DE AJUSTE DO CAUÃ (prioridade): ${comentario}` : '',
   ].join('');
   return comPlanoB(
@@ -136,7 +144,7 @@ export function revisarPrevia(negocio, previa, proposta, { podeReprovar }) {
 
 export function prepararRespostas(negocio) {
   return comPlanoB(
-    () => chamar(P.ATENDENTE, `Prepare as respostas prontas para as dúvidas deste cliente:\n${P.fichaNegocio(negocio)}`, 4000,
+    () => chamar(P.ATENDENTE, `Prepare as respostas prontas para as dúvidas deste cliente:\n${P.fichaNegocio(negocio)}${blocoLinks(negocio, 'atendente')}`, 4000,
       (d) => ({ lista: d.respostas })),
     () => ({ lista: sim.respostasFrequentes(negocio) }),
   );

@@ -20,6 +20,7 @@ import { config } from './config.js';
 import { linksWhatsapp } from './whatsapp.js';
 import { agendarSincronizacao, estadoSupabase } from './supabase.js';
 import { Piloto } from './piloto.js';
+import { LeadsSite } from './leadsSite.js';
 
 export class Escritorio {
   constructor({ velocidade = 1 } = {}) {
@@ -29,6 +30,7 @@ export class Escritorio {
     this.encerrando = false;
     this.fluxo = criarFluxo(this);
     this.piloto = new Piloto(this);
+    this.leadsSite = new LeadsSite(this);
     this.agentes = new Map(
       TIME.map((def) => [def.id, def.id === 'gerente' ? new Gerente(this, def) : new Agente(this, def)]),
     );
@@ -37,11 +39,13 @@ export class Escritorio {
   iniciar() {
     for (const a of this.agentes.values()) a.iniciar();
     this.piloto.iniciar();
+    this.leadsSite.iniciar();
   }
 
   encerrar() {
     this.encerrando = true;
     this.piloto.parar();
+    this.leadsSite.parar();
     this.relogio.parar();
   }
 
@@ -123,6 +127,17 @@ export class Escritorio {
     return n;
   }
 
+  /** Pedido feito por um cliente no formulário do site: entra no fluxo como negócio real */
+  receberLeadSite(dados) {
+    const n = db.criarNegocio({ ...dados, etapa: 'prospeccao' });
+    db.inserirTarefa({ agente: 'gerente', tipo: 'negocio', negocioId: n.id, prioridade: 3 });
+    this.log({ negocioId: n.id, tipo: 'decisao', texto: `Novo contato pelo site: ${n.nome}. O time vai preparar a resposta para você aprovar.` });
+    this.emitirNegocio(n.id);
+    this.acordar('gerente');
+    this.emitirAgente('gerente');
+    return n;
+  }
+
   aprovar(negocioId) {
     const n = db.obterNegocio(negocioId);
     if (!n) throw new ErroUsuario('Negócio não encontrado.', 404);
@@ -187,7 +202,7 @@ export function resumoNegocio(n) {
   const previa = db.ultimaPrevia(n.id);
   return {
     id: n.id, nome: n.nome, tipo: n.tipo, cidade: n.cidade, instagram: n.instagram, whatsapp: n.whatsapp,
-    status: n.status, etapa: n.etapa, motivo: n.motivo, atualizado_em: n.atualizado_em,
+    fonte: n.fonte, status: n.status, etapa: n.etapa, motivo: n.motivo, atualizado_em: n.atualizado_em,
     mensagem: proposta?.mensagem || null,
     versaoProposta: proposta?.versao || 0,
     versaoPrevia: previa?.versao || 0,

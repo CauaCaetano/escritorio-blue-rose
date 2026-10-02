@@ -72,7 +72,7 @@ export class Painel {
     lista.forEach((n, i) => {
       let card = existentes.get(n.id);
       if (!card) card = this.criarCardAguardando(n);
-      card.querySelector('.meta').textContent = [n.tipo, n.cidade, n.instagram].filter(Boolean).join(' · ');
+      card.querySelector('.meta').textContent = [n.fonte === 'site' ? 'Pediu contato pelo site' : null, n.tipo, n.cidade, n.instagram].filter(Boolean).join(' · ');
       card.querySelector('.motivo').textContent = n.motivo || '';
       card.querySelector('.mensagem').textContent = n.mensagem || '(sem mensagem)';
       if (this.el.aguardando.children[i] !== card) this.el.aguardando.insertBefore(card, this.el.aguardando.children[i] || null);
@@ -217,7 +217,7 @@ export class Painel {
       <li data-id="${n.id}">
         <div>
           <strong>${esc(n.nome)}</strong>
-          <div class="meta">${esc(n.tipo || '')} · ${esc(n.cidade || '')} · ${esc(ROTULO_ETAPA[n.etapa] || n.etapa || '')}</div>
+          <div class="meta">${esc([n.fonte === 'site' ? 'via site' : null, n.tipo, n.cidade, ROTULO_ETAPA[n.etapa] || n.etapa].filter(Boolean).join(' · '))}</div>
         </div>
         <span class="status-negocio ${esc(n.status)}">${n.status === 'aprovado' ? '✉ Pronto para enviar' : esc(ROTULO_STATUS[n.status] || n.status)}</span>
       </li>`).join('');
@@ -316,7 +316,7 @@ export class Painel {
       <header>
         <div>
           <h2>${esc(n.nome)}</h2>
-          <div class="meta">${esc([n.tipo, n.cidade, n.instagram].filter(Boolean).join(' · '))}</div>
+          <div class="meta">${esc([n.fonte === 'site' ? 'Pediu contato pelo site' : null, n.tipo, n.cidade, n.instagram].filter(Boolean).join(' · '))}</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <span class="status-negocio ${esc(n.status)}">${esc(ROTULO_STATUS[n.status] || n.status)}</span>

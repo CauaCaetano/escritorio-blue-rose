@@ -23,7 +23,7 @@ create table if not exists public.negocios (
   whatsapp       text,
   observacoes    text,
   analise        text,
-  fonte          text,                  -- cadastro | demo | piloto
+  fonte          text,                  -- cadastro | demo | piloto | site
   status         text        not null,
   etapa          text,
   motivo         text,
@@ -137,3 +137,35 @@ alter table public.revisoes  enable row level security;
 alter table public.respostas enable row level security;
 alter table public.decisoes  enable row level security;
 alter table public.historico enable row level security;
+
+-- =============================================================
+-- Contatos do formulário do site (GitHub Pages)
+-- -------------------------------------------------------------
+-- O site usa a chave PÚBLICA (anon). Ela só consegue INSERIR um
+-- pedido novo: não lê, não altera e não apaga nada (RLS abaixo).
+-- O escritório lê com a service_role e marca "importado_em".
+-- =============================================================
+create table if not exists public.leads_site (
+  id            uuid        primary key default gen_random_uuid(),
+  criado_em     timestamptz not null default now(),
+  nome          text        not null check (char_length(nome) between 2 and 120),
+  negocio       text        check (char_length(negocio) <= 160),
+  whatsapp      text        check (char_length(whatsapp) <= 30),
+  interesses    text[]      not null default '{}' check (cardinality(interesses) <= 8),
+  mensagem      text        not null check (char_length(mensagem) between 10 and 2000),
+  origem        text        check (origem ~ '^[a-z0-9-]{1,60}$'),
+  pagina        text        check (char_length(pagina) <= 200),
+  idioma        text        check (idioma in ('pt-BR', 'en')),
+  importado_em  timestamptz,
+  negocio_id    bigint
+);
+
+alter table public.leads_site enable row level security;
+
+drop policy if exists "site envia contato" on public.leads_site;
+create policy "site envia contato" on public.leads_site
+  for insert to anon
+  with check (importado_em is null and negocio_id is null);
+
+-- Sem políticas de select/update/delete para anon: o público não lê nem mexe em nada.
+revoke select, update, delete on public.leads_site from anon;

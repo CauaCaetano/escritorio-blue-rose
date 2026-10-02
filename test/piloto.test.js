@@ -42,6 +42,8 @@ test('respeita o intervalo, uma busca por vez e a meta diária', () => {
   db.banco().prepare("UPDATE tarefas SET status = 'concluida'").run();
   for (let i = 0; i < 3; i++) db.criarNegocio({ nome: `Teste ${i}`, fonte: 'piloto' });
   db.banco().prepare("UPDATE negocios SET status = 'aprovado'").run();
+  // Data fixa no dia simulado (senão o teste depende do dia em que roda)
+  db.banco().prepare('UPDATE negocios SET criado_em = ?').run(new Date(2026, 9, 1, 14, 0, 0).toISOString());
   agora = new Date(2026, 9, 1, 15, 0, 0);
   assert.match(esc.piloto.checar(), /Meta do dia cumprida \(3\/3\)/);
 

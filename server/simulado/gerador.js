@@ -6,6 +6,8 @@
 // Todos os dados aqui são INVENTADOS.
 // =============================================================
 
+import { linksParaNegocio } from '../site.js';
+
 const sortear = (lista) => lista[Math.floor(Math.random() * lista.length)];
 const embaralhar = (lista) => [...lista].sort(() => Math.random() - 0.5);
 
@@ -112,10 +114,16 @@ Investimento (pagamento único, sem mensalidade)
 Prazo
 De 4 a 6 dias úteis após a aprovação do conteúdo.${ajuste}`;
 
-  const mensagem =
-`Oi! Tudo bem? Aqui é da BLUE ROSE 🌹
+  const { exemplo } = linksParaNegocio(negocio, 'redator');
+  const mensagem = negocio.fonte === 'site'
+    ? `Oi! Aqui é o Cauã, da BLUE ROSE 🌹
+Obrigado por chamar pelo site! Já li o que você contou sobre a ${primeiroNome} e montei uma prévia de como poderia ficar.
+Para ter uma ideia, veja um exemplo do seu tipo de negócio: ${exemplo}
+Posso te mandar a prévia por aqui?`
+    : `Oi! Tudo bem? Aqui é da BLUE ROSE 🌹
 Vi o perfil da ${primeiroNome} e montei uma prévia gratuita de como poderia ficar uma página para vocês, com botão direto para o WhatsApp.
-Posso te mandar o link para dar uma olhada? Sem compromisso!`;
+Veja como fica um site para o seu tipo de negócio: ${exemplo}
+Posso te mandar a prévia para dar uma olhada? Sem compromisso!`;
 
   return { proposta, mensagem };
 }
@@ -205,6 +213,7 @@ export function respostasFrequentes(negocio) {
     { pergunta: 'Qual o prazo?', resposta: 'Site simples em 3 a 4 dias úteis; site + automação em 4 a 6 dias úteis.' },
     { pergunta: 'Como funciona?', resposta: 'Você aprova a prévia, a gente ajusta os textos, publica a página e configura as respostas automáticas no WhatsApp que você já usa.' },
     { pergunta: 'E depois da entrega?', resposta: 'Uma rodada de ajustes já está incluída no preço.' },
+    { pergunta: 'Tem algum exemplo?', resposta: `Tem sim! Olha este site de exemplo do seu tipo de negócio: ${linksParaNegocio(negocio, 'atendente').exemplo}` },
   ];
 }
 

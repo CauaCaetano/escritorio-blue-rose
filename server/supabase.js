@@ -31,7 +31,7 @@ function idInstalacao() {
   return instalacao;
 }
 
-function obterCliente() {
+export function obterCliente() {
   if (!cliente) {
     cliente = createClient(config.supabaseUrl, config.supabaseChave, {
       auth: { persistSession: false, autoRefreshToken: false },
