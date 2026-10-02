@@ -140,6 +140,8 @@ export function abrirBanco(caminho) {
   // Migrações simples: colunas novas em bancos criados por versões antigas
   const colunas = db.prepare('PRAGMA table_info(negocios)').all().map((c) => c.name);
   if (!colunas.includes('whatsapp')) db.exec('ALTER TABLE negocios ADD COLUMN whatsapp TEXT');
+  // De onde veio o negócio: cadastro (você), demo (fictício) ou piloto (achado na web)
+  if (!colunas.includes('fonte')) db.exec("ALTER TABLE negocios ADD COLUMN fonte TEXT DEFAULT 'cadastro'");
   // Tarefas que estavam "em andamento" quando o servidor caiu voltam para a fila
   db.prepare(`UPDATE tarefas SET status = 'pendente' WHERE status = 'andamento'`).run();
   return db;
@@ -195,13 +197,13 @@ export const marcarPedido = (id, status) => db.prepare('UPDATE pedidos SET statu
 export function criarNegocio(n) {
   const t = agora();
   const r = db.prepare(`INSERT INTO negocios
-      (pedido_id, nome, tipo, cidade, instagram, whatsapp, observacoes, analise, status, etapa, criado_em, atualizado_em)
-      VALUES (@pedido_id, @nome, @tipo, @cidade, @instagram, @whatsapp, @observacoes, @analise, 'em_andamento', @etapa, @t, @t)`)
+      (pedido_id, nome, tipo, cidade, instagram, whatsapp, observacoes, analise, fonte, status, etapa, criado_em, atualizado_em)
+      VALUES (@pedido_id, @nome, @tipo, @cidade, @instagram, @whatsapp, @observacoes, @analise, @fonte, 'em_andamento', @etapa, @t, @t)`)
     .run({
       // Só os campos da tabela (o node:sqlite recusa parâmetros extras e "undefined")
       pedido_id: n.pedido_id ?? null, nome: n.nome, tipo: n.tipo ?? null, cidade: n.cidade ?? null,
       instagram: n.instagram ?? null, whatsapp: n.whatsapp ?? null, observacoes: n.observacoes ?? null,
-      analise: n.analise ?? null, etapa: n.etapa ?? 'prospeccao', t,
+      analise: n.analise ?? null, etapa: n.etapa ?? 'prospeccao', fonte: n.fonte ?? (n.pedido_id ? 'demo' : 'cadastro'), t,
     });
   return obterNegocio(r.lastInsertRowid);
 }
@@ -221,6 +223,22 @@ export const negociosDoPedido = (pedidoId) =>
 
 export const listarNegocios = () =>
   db.prepare('SELECT * FROM negocios ORDER BY atualizado_em DESC, id DESC').all();
+
+/** Quantos negócios o piloto automático já criou desde `desdeIso` */
+export const contarPiloto = (desdeIso) =>
+  db.prepare(`SELECT COUNT(*) AS n FROM negocios WHERE fonte = 'piloto' AND criado_em >= ?`).get(desdeIso).n;
+
+/** Nomes já conhecidos (para não prospectar o mesmo negócio duas vezes) */
+export const nomesDeNegocios = () => db.prepare('SELECT nome FROM negocios').all().map((r) => r.nome);
+
+/** Tarefas ainda abertas de certos tipos (ex.: busca do piloto em andamento) */
+// Conta também as entregas a caminho que levam uma dessas tarefas (o agente
+// ainda está andando até o colega), senão a fila parece vazia nesse intervalo.
+export const tarefasAbertas = (tipos) =>
+  db.prepare(`SELECT COUNT(*) AS n FROM tarefas WHERE status IN ('pendente','andamento')
+              AND (tipo IN (${tipos.map(() => '?').join(',')})
+                   OR (tipo = 'entregar' AND (${tipos.map(() => 'dados LIKE ?').join(' OR ')})))`)
+    .get(...tipos, ...tipos.map((t) => `%"tipo":"${t}"%`)).n;
 
 export const negociosAguardando = () =>
   db.prepare(`SELECT * FROM negocios WHERE status = 'aguardando_aprovacao' ORDER BY atualizado_em`).all();

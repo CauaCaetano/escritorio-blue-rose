@@ -7,7 +7,7 @@
 // Toda função retorna também "origem" ('api' ou 'simulado').
 // =============================================================
 import * as sim from '../simulado/gerador.js';
-import { pedirJSON, iaAtiva } from '../ia/cliente.js';
+import { pedirJSON, pedirJSONComBusca, iaAtiva } from '../ia/cliente.js';
 import * as P from '../ia/prompts.js';
 
 /** Tenta a IA; em caso de erro devolve o resultado simulado */
@@ -31,6 +31,28 @@ const chamar = async (agente, mensagem, maxTokens, transformar = (d) => d) => {
 // negócios reais você cadastra pelo formulário)
 export async function prospectar(pedido) {
   return { negocios: sim.inventarNegocios(pedido.texto, pedido.quantidade), origem: 'simulado' };
+}
+
+/**
+ * Piloto automático: acha negócios REAIS na web (sem raspagem: busca da Anthropic).
+ * Não existe modo simulado aqui de propósito: inventar empresas "reais" seria enganoso.
+ */
+export async function prospectarReal({ cidade, nicho, quantidade, jaProspectados = [] }) {
+  if (!iaAtiva()) return { negocios: [], origem: 'simulado', erroIA: 'A busca automática precisa da IA real (chave da API)' };
+  try {
+    const r = await pedirJSONComBusca({
+      sistema: P.PROSPECCAO.sistema,
+      schema: P.PROSPECCAO.schema,
+      maxBuscas: 5,
+      mensagem: `Encontre ${quantidade} negócios do nicho "${nicho}" em ${cidade}.\n`
+        + `Já prospectados (não repita): ${jaProspectados.slice(-80).join('; ') || '(nenhum)'}`,
+    });
+    // Só aceita resultados com fonte (link real) e nome
+    const negocios = (r.dados.negocios || []).filter((n) => n.nome?.trim() && /^https?:\/\//.test(n.fonte || ''));
+    return { negocios, origem: 'api', uso: r.uso, modelo: r.modelo };
+  } catch (e) {
+    return { negocios: [], origem: 'simulado', erroIA: e.message };
+  }
 }
 
 export function analisarNegocio(negocio) {

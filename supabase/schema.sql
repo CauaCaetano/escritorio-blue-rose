@@ -23,6 +23,7 @@ create table if not exists public.negocios (
   whatsapp       text,
   observacoes    text,
   analise        text,
+  fonte          text,                  -- cadastro | demo | piloto
   status         text        not null,
   etapa          text,
   motivo         text,

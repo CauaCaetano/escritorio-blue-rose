@@ -83,6 +83,13 @@ export function criarFluxo(esc) {
         return uma('headVendas', 'pedido', null, `o pedido #${pedido.id}`, { pedidoId: pedido.id });
       },
 
+      /** Piloto automático: o CEO manda Vendas procurar novos clientes */
+      async piloto(ag, t) {
+        const { cidade, nicho } = t.dados;
+        await ag.trabalhar('lendo', 1500, `Piloto automático: hora de prospectar ${nicho} em ${cidade}`, null);
+        return uma('headVendas', 'piloto', null, `a meta de prospecção (${nicho})`, t.dados);
+      },
+
       /** Negócio real cadastrado por você no formulário */
       async negocio(ag, t) {
         const n = db.obterNegocio(t.negocio_id);
@@ -115,6 +122,8 @@ export function criarFluxo(esc) {
         (n, t) => `o pedido #${t.dados.pedidoId}`),
       negocio: chefe((n) => `Definindo a abordagem comercial para ${n.nome}`, 'prospector', 'analisar',
         (n) => `o cadastro de ${n.nome}`),
+      piloto: chefe((n, t) => `Definindo o alvo: ${t.dados.nicho} em ${t.dados.cidade}`, 'prospector', 'buscar',
+        (n, t) => `a meta de prospecção (${t.dados.nicho})`),
     },
 
     prospector: {
@@ -135,6 +144,42 @@ export function criarFluxo(esc) {
         }
         return entregar('headMarketing', negocios.map((n) => ({ tipo: 'briefing', negocioId: n.id })),
           negocios.length === 1 ? `o negócio ${negocios[0].nome}` : `${negocios.length} negócios`);
+      },
+
+      /** Piloto automático: pesquisa na web negócios REAIS sem site (só dados públicos de empresas) */
+      async buscar(ag, t) {
+        const { cidade, nicho, quantidade = 2 } = t.dados;
+        const normalizar = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+        const conhecidos = db.nomesDeNegocios();
+        const vistos = new Set(conhecidos.map(normalizar));
+        const r = await ag.trabalharCom('digitando', 6000, `Pesquisando na internet: ${nicho} em ${cidade} sem site`,
+          conteudo.prospectarReal({ cidade, nicho, quantidade, jaProspectados: conhecidos }), null);
+        registrarOrigem(ag, r, null);
+        const novos = [];
+        for (const achado of r.negocios) {
+          if (novos.length >= quantidade || vistos.has(normalizar(achado.nome))) continue;
+          vistos.add(normalizar(achado.nome));
+          novos.push(db.criarNegocio({
+            nome: achado.nome.slice(0, 120),
+            tipo: achado.tipo || nicho,
+            cidade: achado.cidade || cidade,
+            instagram: achado.instagram ? (achado.instagram.startsWith('@') ? achado.instagram : `@${achado.instagram}`) : null,
+            observacoes: `Encontrado pelo piloto automático. Fonte: ${achado.fonte}`,
+            analise: `${achado.presenca} ${achado.motivo}`.trim(),
+            fonte: 'piloto',
+            etapa: 'marketing',
+          }));
+        }
+        if (!novos.length) {
+          ag.log(`Busca por ${nicho} em ${cidade} não trouxe negócios novos.`, { tipo: r.erroIA ? 'erro' : 'info' });
+          return null;
+        }
+        for (const n of novos) {
+          ag.log(`Encontrou ${n.nome} (${n.tipo}, ${n.cidade}) na internet.`, { negocioId: n.id });
+          esc.emitirNegocio(n.id);
+        }
+        return entregar('headMarketing', novos.map((n) => ({ tipo: 'briefing', negocioId: n.id })),
+          novos.length === 1 ? `o negócio ${novos[0].nome}` : `${novos.length} negócios novos`);
       },
 
       /** Negócio real: analisa só com os dados que você cadastrou (sem raspagem) */

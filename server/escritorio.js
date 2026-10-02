@@ -19,6 +19,7 @@ import { iaAtiva } from './ia/cliente.js';
 import { config } from './config.js';
 import { linksWhatsapp } from './whatsapp.js';
 import { agendarSincronizacao, estadoSupabase } from './supabase.js';
+import { Piloto } from './piloto.js';
 
 export class Escritorio {
   constructor({ velocidade = 1 } = {}) {
@@ -27,6 +28,7 @@ export class Escritorio {
     this.ouvintes = new Set();
     this.encerrando = false;
     this.fluxo = criarFluxo(this);
+    this.piloto = new Piloto(this);
     this.agentes = new Map(
       TIME.map((def) => [def.id, def.id === 'gerente' ? new Gerente(this, def) : new Agente(this, def)]),
     );
@@ -34,10 +36,12 @@ export class Escritorio {
 
   iniciar() {
     for (const a of this.agentes.values()) a.iniciar();
+    this.piloto.iniciar();
   }
 
   encerrar() {
     this.encerrando = true;
+    this.piloto.parar();
     this.relogio.parar();
   }
 
@@ -87,6 +91,7 @@ export class Escritorio {
       velocidade: this.relogio.velocidade,
       ia: { ativa: iaAtiva(), modelo: config.modeloIA },
       supabase: estadoSupabase(),
+      piloto: this.piloto.status(),
       agentes: this.listaAgentes().map((a) => a.publico()),
       aguardando: db.negociosAguardando().map(resumoNegocio),
       negocios: db.listarNegocios().slice(0, 50).map(resumoNegocio),

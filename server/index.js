@@ -125,6 +125,10 @@ app.post('/api/negocios/:id/ajuste', rota((req) => {
   return resumoNegocio(escritorio.pedirAjuste(Number(req.params.id), comentario));
 }));
 
+// Piloto automático de prospecção (liga/desliga e configura)
+app.get('/api/piloto', rota(() => escritorio.piloto.status()));
+app.put('/api/piloto', rota((req) => escritorio.piloto.salvar(req.body || {})));
+
 app.post('/api/velocidade', rota((req) => {
   const v = Number(req.body.valor);
   if (![1, 2, 4].includes(v)) throw new ErroUsuario('Velocidade deve ser 1, 2 ou 4.');
